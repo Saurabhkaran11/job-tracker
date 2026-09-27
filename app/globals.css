@@ -5,19 +5,60 @@
    Example: <html class="dark"> makes `dark:bg-gray-800` apply. */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ============================================================
+   Design tokens.
+
+   One accent, and it is graphite rather than a hue: structure and emphasis carry in
+   near-black, which leaves actual colour free to mean something (green for an offer,
+   red for a rejection, amber for a take-home). In dark mode the accent inverts to
+   near-white, which is why it is a token rather than a fixed colour.
+
+   Every control in the app -- MUI's and the hand-written ones -- resolves its height,
+   radius and border from here, so the two families read as one.
+   Example: a primary button is bg-[var(--accent)] text-[var(--on-accent)].
+   ============================================================ */
+:root {
+  --surface-0: #f7f7f8;
+  --surface-1: #ffffff;
+  --surface-2: #fbfbfc;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --accent: #18181b;
+  --accent-hover: #3f3f46;
+  --accent-soft: #f4f4f5;
+  --on-accent: #ffffff;
+
+  --control-h: 36px;
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+.dark {
+  --surface-0: #0b0b0e;
+  --surface-1: #17171a;
+  --surface-2: #1d1d21;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --border: #27272a;
+  --border-strong: #3f3f46;
+  --accent: #fafafa;
+  --accent-hover: #e4e4e7;
+  --accent-soft: #232327;
+  --on-accent: #18181b;
+}
+
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #fafafa;
-  color: #1f2937;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
-.dark body {
-  background: #0f1117;
-  color: #e5e7eb;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* Vite mounted the app into #root; under Next the page is a direct child of body, so

@@ -124,6 +124,10 @@ function makeCompany(name, role = {}) {
   }
 }
 
+// Lets the tab strip show a count without reaching into the role twice.
+// Example: roleLinkCount({ links: [a, b] }) === 2
+const roleLinkCount = (role) => role?.links?.length ?? 0
+
 const allLinks = (company) => normaliseRoles(company).flatMap((r) => r.links || [])
 
 // True when ANY role at this company has a resume attached.
@@ -144,23 +148,28 @@ const withRoles = (companies) => companies.map((c) => ({ ...c, roles: normaliseR
 // lifted text colour on charcoal. The light pastels alone glare against the dark
 // surface, so every chip needs its dark counterpart rather than inheriting.
 // Example: 'Offer' is green-50/green-600 in light, green-500/10 with green-400 in dark.
+// These keep their hues on purpose. The accent went graphite precisely so that colour
+// is free to carry meaning, and a status chip is the one place in the app where the
+// colour IS the information -- green reads as an offer before the word is read.
+// Each entry carries both themes: a pale tint on white, a translucent one on charcoal.
+// Example: 'Offer' is green-50/green-600 in light, green-500/15 with green-300 in dark.
 const STATUS_STYLES = {
-  'Applied': 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
-  'Phone Screen': 'bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-300',
-  'Interviewing': 'bg-purple-50 text-purple-600 dark:bg-purple-500/15 dark:text-purple-300',
+  'Applied': 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300',
+  'Phone Screen': 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300',
+  'Interviewing': 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
   'Take-home': 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
-  'Offer': 'bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-300',
-  'Rejected': 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300',
-  'On Hold': 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
+  'Offer': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  'Rejected': 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300',
+  'On Hold': 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300',
 }
 
 const PRIORITY_STYLES = {
-  'High': 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300',
+  'High': 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300',
   'Medium': 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
-  'Low': 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
+  'Low': 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300',
 }
 
-const NEUTRAL_CHIP = 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+const NEUTRAL_CHIP = 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
 
 
 // One chip per ROLE, because a company can have several applications in flight and a
@@ -411,11 +420,11 @@ function BulkAddPanel({ companies, onSubmit, onClose }) {
       className="mb-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-        <Icon name="clipboardCheck" size="18" color="#9333ea" />
+        <Icon name="clipboardCheck" size="18" />
         <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 flex-1">
           Add everything at once
         </Typography>
-        <button type="submit" className="px-3 py-1.5 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-all">
+        <button type="submit" className="px-3 py-1.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm font-medium hover:bg-[var(--accent-hover)] transition-all">
           Save all
         </button>
         <button type="button" onClick={onClose} aria-label="Close bulk add" className="px-2 py-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition-colors">
@@ -475,14 +484,14 @@ function SampleDataPanel({ onLoad, onClose }) {
       className="mb-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-        <Icon name="sparkles" size="18" color="#9333ea" />
+        <Icon name="sparkles" size="18" />
         <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 flex-1">
           Sample data for every feature
         </Typography>
         <button
           type="button"
           onClick={onLoad}
-          className="px-3 py-1.5 bg-purple-500 text-white rounded-lg text-sm font-medium hover:bg-purple-600 transition-all"
+          className="px-3 py-1.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm font-medium hover:bg-[var(--accent-hover)] transition-all"
         >
           Load it
         </button>
@@ -562,12 +571,51 @@ const THEME_KEY = 'job-tracker-theme'
 // One theme factory for both modes, so the accent and shape stay identical and only
 // the surface colours change.
 // Example: buildTheme('dark').palette.background.default === '#0f1117'
+// MUI is told to resolve its own colours, radius and control height from the same
+// tokens the hand-written controls use, so an <input> and a <button> beside it read as
+// one family instead of two. Without these overrides MUI brings its own 12px radius,
+// its own border colour and a taller control, which is what made the rows look mixed.
+// Example: a MUI TextField and a plain <button> next to it are both 36px, 8px radius.
 const buildTheme = (mode) => createTheme({
   palette: mode === 'dark'
-    ? { mode: 'dark', primary: { main: '#a855f7' }, background: { default: '#0f1117', paper: '#1f2937' } }
-    : { mode: 'light', primary: { main: '#9333ea' }, background: { default: '#fafafa' } },
-  shape: { borderRadius: 12 },
-  typography: { fontFamily: 'Inter, system-ui, sans-serif' },
+    ? { mode: 'dark', primary: { main: '#fafafa' }, background: { default: '#0b0b0e', paper: '#17171a' } }
+    : { mode: 'light', primary: { main: '#18181b' }, background: { default: '#f7f7f8', paper: '#ffffff' } },
+  shape: { borderRadius: 8 },
+  typography: {
+    fontFamily: 'Inter, system-ui, sans-serif',
+    fontSize: 14,
+    button: { textTransform: 'none', fontWeight: 500 },
+  },
+  components: {
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 'var(--radius)',
+          backgroundColor: 'var(--surface-1)',
+          fontSize: 14,
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--border)' },
+          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--border-strong)' },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--accent)', borderWidth: 1 },
+        },
+        input: { paddingTop: 8, paddingBottom: 8 },
+      },
+    },
+    MuiInputBase: { styleOverrides: { root: { color: 'var(--text-primary)' } } },
+    MuiButton: {
+      styleOverrides: {
+        root: { borderRadius: 'var(--radius)', minHeight: 'var(--control-h)', boxShadow: 'none' },
+        contained: { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', '&:hover': { backgroundColor: 'var(--accent-hover)', boxShadow: 'none' } },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: { borderRadius: 6, fontWeight: 500, borderColor: 'var(--border)' },
+      },
+    },
+    MuiFormHelperText: { styleOverrides: { root: { marginLeft: 2 } } },
+    MuiMenuItem: { styleOverrides: { root: { fontSize: 14 } } },
+    MuiAlert: { styleOverrides: { root: { borderRadius: 'var(--radius)' } } },
+  },
 })
 
 const ThemeModeContext = React.createContext({ mode: 'light', toggleMode: () => {} })
@@ -737,7 +785,7 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
             <div className="magnetic-dot magnetic-dot-3" />
           </>
         )}
-        <div className="flex items-start gap-3 mb-2">
+        <div className="flex items-start gap-3 mb-1.5">
           <div className="flex-shrink-0 mt-0.5">
             {cardStyle === 'compact' ? (
               <span className="compact-number">{index + 1}</span>
@@ -749,7 +797,7 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
             {editing ? (
               <TextField size="small" value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveEdit()} onBlur={saveEdit} autoFocus className="w-full" />
             ) : (
-              <Typography variant="subtitle1" className="font-semibold cursor-text hover:text-purple-600 truncate" onDoubleClick={() => { setEditName(company.name); setEditing(true) }}>
+              <Typography variant="subtitle1" className="font-semibold cursor-text hover:text-[var(--text-primary)] truncate" onDoubleClick={() => { setEditName(company.name); setEditing(true) }}>
                 <Icon name="briefcase" size="16" /> {company.name}
               </Typography>
             )}
@@ -918,14 +966,14 @@ export function HomePage() {
   const { mode, toggleMode } = useThemeMode()
 
   return (
-    <div className="min-h-screen workspace-bg py-8 px-4">
+    <div className="min-h-screen py-10 px-4">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Icon name="building2" size="40" color="#9333ea" />
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-transparent">Job Tracker</h1>
+            <Icon name="building2" size="24" />
+            <h1 className="text-3xl font-semibold tracking-tight text-[var(--text-primary)]">Job Tracker</h1>
           </div>
-          <p className="text-gray-500 dark:text-gray-400 text-lg">Track every application, every link, every resume</p>
+          <p className="text-[var(--text-secondary)] text-sm">Track every application, every link, every resume</p>
         </div>
       </motion.div>
 
@@ -965,7 +1013,7 @@ export function HomePage() {
           { id: 'compact', label: 'Compact', icon: 'list' },
           { id: 'detailed', label: 'Detailed', icon: 'columns' },
         ].map((s) => (
-          <motion.button key={s.id} onClick={() => setCardStyle(s.id)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${cardStyle === s.id ? 'bg-purple-500 text-white shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}>
+          <motion.button key={s.id} onClick={() => setCardStyle(s.id)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${cardStyle === s.id ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}>
             <Icon name={s.icon} size="14" /> {s.label}
           </motion.button>
         ))}
@@ -974,15 +1022,15 @@ export function HomePage() {
       {query && (
         <div className="flex justify-between items-center px-2 mb-4">
           <span className="text-sm text-gray-500 dark:text-gray-400">{filtered.length} {filtered.length === 1 ? 'company' : 'companies'} found</span>
-          <button className="text-sm text-purple-500 hover:text-purple-700" onClick={() => setQuery('')}>Clear</button>
+          <button className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" onClick={() => setQuery('')}>Clear</button>
         </div>
       )}
 
       {/* Rendered even with no companies, so the sample-data and dark-mode controls
           are reachable on a first visit; only the list-specific toggles are gated. */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-4 mb-4 flex-wrap">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-2 mb-5 flex-wrap">
         {stats.total > 0 && (
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCollapsed(!collapsed)} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-purple-300 transition-all flex items-center gap-2">
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCollapsed(!collapsed)} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-[var(--border-strong)] transition-all flex items-center gap-2">
             <Icon name="chevronDown" size="16" /> {collapsed ? 'Show All Companies' : 'Collapse List'}
           </motion.button>
         )}
@@ -997,7 +1045,7 @@ export function HomePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowSamples((v) => !v)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showSamples ? 'bg-purple-500 text-white border-purple-500 shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showSamples ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[var(--border-strong)]'}`}
           >
             <Icon name="sparkles" size="16" /> Sample data
           </motion.button>
@@ -1011,7 +1059,7 @@ export function HomePage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowBulk((v) => !v)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showBulk ? 'bg-purple-500 text-white border-purple-500 shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showBulk ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[var(--border-strong)]'}`}
         >
           <Icon name="clipboardCheck" size="16" /> Bulk add
         </motion.button>
@@ -1025,7 +1073,7 @@ export function HomePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleMode}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-purple-300 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-[var(--border-strong)] transition-all flex items-center gap-2"
           >
             <Icon name={mode === 'dark' ? 'sun' : 'moon'} size="16" /> {mode === 'dark' ? 'Light mode' : 'Dark mode'}
           </motion.button>
@@ -1036,7 +1084,7 @@ export function HomePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowTracker(!showTracker)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showTracker ? 'bg-purple-500 text-white border-purple-500 shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showTracker ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[var(--border-strong)]'}`}
           >
             <Icon name="list" size="16" /> {showTracker ? 'Hide Job Links Tracker' : 'Show Job Links Tracker'}
           </motion.button>
@@ -1044,17 +1092,16 @@ export function HomePage() {
       </motion.div>
 
       {!collapsed && stats.total > 0 && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-4 mb-8 flex-wrap">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-4 mb-5 flex-wrap items-baseline">
           {[
-            { label: 'Companies', value: stats.total, icon: 'building2' },
-            { label: 'Links', value: stats.totalLinks, icon: 'link' },
-            { label: 'Resumes', value: stats.withResume, icon: 'fileText' }
+            { label: 'Companies', value: stats.total },
+            { label: 'Links', value: stats.totalLinks },
+            { label: 'Resumes', value: stats.withResume }
           ].map((s) => (
-            <motion.div key={s.label} className="flex-1 min-w-[140px] bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 text-center card-magnetic" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Icon name={s.icon} size="24" color="#9333ea" />
-              <div className="text-2xl font-bold mt-1">{s.value}</div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">{s.label}</div>
-            </motion.div>
+            <div key={s.label} className="flex items-baseline gap-1.5">
+              <span className="text-sm font-medium text-[var(--text-primary)]">{s.value}</span>
+              <span className="text-sm text-[var(--text-secondary)]">{s.label.toLowerCase()}</span>
+            </div>
           ))}
         </motion.div>
       )}
@@ -1071,10 +1118,10 @@ export function HomePage() {
       )}
 
       {companies.length > 0 && showTracker && (
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-8">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-6">
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
-              <Icon name="list" size="18" color="#9333ea" />
+              <Icon name="list" size="18" />
               <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200">Job Links Tracker</Typography>
             </div>
             <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
@@ -1086,7 +1133,7 @@ export function HomePage() {
               <div className="col-span-2">Note</div>
             </div>
             {companies.map((c, i) => (
-              <motion.div key={c.id} className="grid grid-cols-12 gap-2 px-4 py-3 items-center border-b border-gray-50 hover:bg-purple-50/30 transition-colors card-magnetic" whileHover={{ scale: 1.01 }}>
+              <motion.div key={c.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center border-b border-gray-50 hover:bg-[var(--accent-soft)]/30 transition-colors card-magnetic" whileHover={{ scale: 1.01 }}>
                 <div className="col-span-1"><span className="inline-flex items-center justify-center w-6 h-6 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-xs font-bold">{i + 1}</span></div>
                 <div className="col-span-3 truncate">
                   <span className="font-medium text-gray-700 dark:text-gray-200 text-sm">{c.name}</span>
@@ -1104,8 +1151,8 @@ export function HomePage() {
                   <RoleChips company={c} field="Priority" styles={PRIORITY_STYLES} />
                 </div>
                 <div className="col-span-2">
-                  <span className={`text-sm font-medium ${allLinks(c).length > 0 ? 'text-purple-600' : 'text-gray-400 dark:text-gray-500'}`}>
-                    <Icon name="link" size="12" /> {allLinks(c).length} {allLinks(c).length === 1 ? 'link' : 'links'} added
+                  <span className={`inline-flex items-center gap-1.5 text-sm ${allLinks(c).length > 0 ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}`}>
+                    <Icon name="link" size="14" /> {allLinks(c).length} {allLinks(c).length === 1 ? 'link' : 'links'}
                   </span>
                 </div>
                 <div className="col-span-2 text-xs text-gray-500 dark:text-gray-400 truncate">
@@ -1120,7 +1167,7 @@ export function HomePage() {
       {!collapsed && (
       <AnimatePresence mode="popLayout">
         {filtered.length === 0 ? (
-          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
             <Icon name="briefcase" size="64" color="#d1d5db" />
             <p className="text-xl text-gray-400 dark:text-gray-500 mt-4">{query ? 'No matching companies.' : 'Add a company to get started'}</p>
             <p className="text-sm text-gray-300 dark:text-gray-600 mt-1">Double-click a company name to edit it</p>
@@ -1135,14 +1182,14 @@ export function HomePage() {
                 onClick={loadSampleData}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="mt-6 px-5 py-2.5 bg-white dark:bg-gray-800 border-2 border-dashed border-purple-300 rounded-xl text-purple-500 font-medium hover:bg-purple-50 transition-all inline-flex items-center gap-2 magnetic-snap"
+                className="mt-6 px-5 py-2.5 bg-white dark:bg-gray-800 border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all inline-flex items-center gap-2 magnetic-snap"
               >
                 <Icon name="plusCircle" size="18" /> Load sample data
               </motion.button>
             )}
           </motion.div>
         ) : (
-          <motion.div key="grid" className="grid grid-cols-1 gap-4 card-grid-perspective">
+          <motion.div key="grid" className="grid grid-cols-1 gap-3 card-grid-perspective">
             {filtered.map((c, i) => (
               <CompanyCard key={c.id} company={c} onRemove={removeCompany} onEdit={editCompany} cardStyle={cardStyle} index={i} />
             ))}
@@ -1163,7 +1210,7 @@ export function HomePage() {
         {companies.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 card-magnetic">
             <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center"><Icon name="fileText" size="18" color="#9333ea" /></div>
+              <div className="flex-shrink-0 w-8 h-8 bg-[var(--accent-soft)] rounded-lg flex items-center justify-center"><Icon name="fileText" size="18" /></div>
               <div>
                 <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Quick Notes</Typography>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Track your applications with the SR No and Status tracker above. Double-click any company name to edit inline. Use the card style toggle to switch between Default, Compact, Detailed, and Featured views. Upload resumes to each company for easy tracking.</p>
@@ -1175,7 +1222,7 @@ export function HomePage() {
   )
 }
 
-function CompanyLinks({ index, role, addLink, editingLink, setEditingLink, editLabel, setEditLabel, editUrl, setEditUrl, updateLink, removeLink }) {
+function CompanyLinks({ role, addLink, editingLink, setEditingLink, editLabel, setEditLabel, editUrl, setEditUrl, updateLink, removeLink }) {
   const { control: linkControl, handleSubmit: handleLinkSubmit, reset: resetLink } = useForm({ resolver: zodResolver(linkSchema), defaultValues: { label: '', url: '' } })
 
   // Controller already owns each field's value. The previous code ALSO kept local
@@ -1192,20 +1239,6 @@ function CompanyLinks({ index, role, addLink, editingLink, setEditingLink, editL
 
   return (
     <div className="card-grid-perspective">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex gap-3 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 card-magnetic flex-1 text-center">
-          <div className="text-lg font-bold text-purple-600">{index + 1}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">SR No</div>
-        </div>
-        <div className={`rounded-xl border p-3 card-magnetic flex-1 text-center ${role.links.length > 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'}`}>
-          <div className="text-lg font-bold text-green-600">{role.links.length > 0 ? 'Active' : 'Pending'}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Status</div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 card-magnetic flex-1 text-center">
-          <div className="text-lg font-bold text-blue-600">{role.links.length}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Links</div>
-        </div>
-      </motion.div>
       <motion.form onSubmit={handleLinkSubmit(onAddLink)} className="flex flex-row gap-2 items-center mb-6 card-magnetic" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.01 }}>
         <Controller name="label" control={linkControl} render={({ field }) => (
           <TextField {...field} label="Job title" size="small" className="flex-1" />
@@ -1213,7 +1246,7 @@ function CompanyLinks({ index, role, addLink, editingLink, setEditingLink, editL
         <Controller name="url" control={linkControl} render={({ field, fieldState: { error } }) => (
           <TextField {...field} label="https://..." error={!!error} helperText={error?.message} size="small" className="flex-1" />
         )} />
-        <motion.button type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-2.5 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-all flex items-center justify-center gap-2 whitespace-nowrap"><Icon name="link" size="20" /> Add Link</motion.button>
+        <motion.button type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-2.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"><Icon name="link" size="20" /> Add Link</motion.button>
       </motion.form>
       {role.links.length > 0 && (
         <motion.ul className="space-y-3" style={{ listStyle: 'none', padding: 0, margin: 0 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
@@ -1228,7 +1261,7 @@ function CompanyLinks({ index, role, addLink, editingLink, setEditingLink, editL
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[200px] text-purple-600 no-underline hover:underline flex items-center gap-2 text-sm overflow-hidden text-ellipsis whitespace-nowrap" onDoubleClick={() => { setEditingLink(link.id); setEditLabel(link.label || ''); setEditUrl(link.url) }}>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[200px] text-[var(--text-primary)] no-underline hover:underline flex items-center gap-2 text-sm overflow-hidden text-ellipsis whitespace-nowrap" onDoubleClick={() => { setEditingLink(link.id); setEditLabel(link.label || ''); setEditUrl(link.url) }}>
                     <Icon name="externalLink" size="14" /> {link.label || link.url}
                   </a>
                   <motion.button onClick={() => removeLink(link.id)} whileHover={{ scale: 1.3 }} whileTap={{ scale: 0.8 }} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors flex-shrink-0"><Icon name="trash" size="18" /></motion.button>
@@ -1242,24 +1275,9 @@ function CompanyLinks({ index, role, addLink, editingLink, setEditingLink, editL
   )
 }
 
-function CompanyResume({ index, role, setResume, handleDownload, handleFileChange, fileError }) {
+function CompanyResume({ role, setResume, handleDownload, handleFileChange, fileError }) {
   return (
     <div>
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex gap-3 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 card-magnetic flex-1 text-center">
-          <div className="text-lg font-bold text-purple-600">{index + 1}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">SR No</div>
-        </div>
-        <div className={`rounded-xl border p-3 card-magnetic flex-1 text-center ${role.resume ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'}`}>
-          <div className="text-lg font-bold text-green-600">{role.resume ? 'Uploaded' : 'Pending'}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Resume</div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 card-magnetic flex-1 text-center">
-          {/* was hardcoded to 0, so this panel always claimed the company had no links */}
-          <div className="text-lg font-bold text-blue-600">{role.links.length}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Links</div>
-        </div>
-      </motion.div>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {role.resume ? (
         <motion.div whileHover={{ scale: 1.02 }} className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 card-magnetic card-shimmer">
@@ -1278,7 +1296,7 @@ function CompanyResume({ index, role, setResume, handleDownload, handleFileChang
           htmlFor="resume-upload"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="block w-full py-4 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center text-gray-500 dark:text-gray-400 hover:border-purple-400 hover:text-purple-500 transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="block w-full py-4 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center text-gray-500 dark:text-gray-400 hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           <Icon name="upload" size="20" /> Upload Resume
           <input id="resume-upload" type="file" accept=".pdf,.doc,.docx,.txt,.md" className="sr-only" onChange={handleFileChange} />
@@ -1290,27 +1308,13 @@ function CompanyResume({ index, role, setResume, handleDownload, handleFileChang
   )
 }
 
-function CompanyCustom({ index, customFields, customNames, showCustomInput, customName, setCustomName, setShowCustomInput, updateCustomField, addCustomField, addCustomFieldNamed }) {
+function CompanyCustom({ customFields, customNames, showCustomInput, customName, setCustomName, setShowCustomInput, updateCustomField, addCustomField, addCustomFieldNamed }) {
   // Only offer presets this company does not already have.
   // Example: customFields = { Salary: '90k' } -> 'Salary' drops out of the chips.
   const availablePresets = PRESET_TOGGLES.filter((t) => customFields[t.name] === undefined)
 
   return (
     <div>
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex gap-3 mb-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 card-magnetic flex-1 text-center">
-          <div className="text-lg font-bold text-purple-600">{index + 1}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">SR No</div>
-        </div>
-        <div className={`rounded-xl border p-3 card-magnetic flex-1 text-center ${customNames.length > 0 ? 'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30' : 'bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700'}`}>
-          <div className="text-lg font-bold text-green-600">{customNames.length > 0 ? 'Active' : 'Pending'}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Custom</div>
-        </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3 card-magnetic flex-1 text-center">
-          <div className="text-lg font-bold text-blue-600">{customNames.length}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">Fields</div>
-        </div>
-      </motion.div>
       <AnimatePresence>
       {customNames.map((cn) => (
           <motion.div key={cn} className="flex items-center gap-3 mb-3 card-magnetic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ scale: 1.01 }}>
@@ -1329,7 +1333,7 @@ function CompanyCustom({ index, customFields, customNames, showCustomInput, cust
                 onClick={() => addCustomFieldNamed(preset.name)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-purple-200 rounded-full text-sm text-purple-600 hover:bg-purple-50 hover:border-purple-400 transition-all flex items-center gap-1.5 magnetic-snap"
+                className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-[var(--border)] rounded-full text-sm text-[var(--text-primary)] hover:bg-[var(--accent-soft)] hover:border-[var(--border-strong)] transition-all flex items-center gap-1.5 magnetic-snap"
               >
                 <Icon name="plusCircle" size="14" /> {preset.name}
               </motion.button>
@@ -1344,7 +1348,7 @@ function CompanyCustom({ index, customFields, customNames, showCustomInput, cust
            for adding a custom field should be. `animate` is what ends the initial
            state. Example: mounts at opacity 0, animates to opacity 1. */
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.02 }}>
-          <button onClick={() => setShowCustomInput(true)} className="w-full py-3 bg-white dark:bg-gray-800 border-2 border-dashed border-purple-300 rounded-xl text-purple-500 font-medium hover:bg-purple-50 transition-all flex items-center justify-center gap-2"><Icon name="plusCircle" size="18" /> Add your own toggle</button>
+          <button onClick={() => setShowCustomInput(true)} className="w-full py-3 bg-white dark:bg-gray-800 border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center gap-2"><Icon name="plusCircle" size="18" /> Add your own toggle</button>
         </motion.div>
       )}
       {showCustomInput && (
@@ -1365,7 +1369,7 @@ function CompanyCustom({ index, customFields, customNames, showCustomInput, cust
 // Example: <RoleSection title="Job links"><CompanyLinks … /></RoleSection>
 function RoleSection({ title, children }) {
   return (
-    <section className="mb-8">
+    <section className="mb-6">
       <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 mb-3">{title}</Typography>
       {children}
     </section>
@@ -1376,17 +1380,17 @@ function RoleSection({ title, children }) {
 // every toggle are readable in one pass -- the layout to pick when reviewing an
 // application rather than editing one field.
 // Example: <RoleDetailedView role={activeRole} ... />
-function RoleDetailedView({ index, role, addLink, editingLink, setEditingLink, editLabel, setEditLabel, editUrl, setEditUrl, updateLink, removeLink, setResume, handleDownload, handleFileChange, fileError, customFields, customNames, showCustomInput, customName, setCustomName, setShowCustomInput, updateCustomField, addCustomField, addCustomFieldNamed }) {
+function RoleDetailedView({ role, addLink, editingLink, setEditingLink, editLabel, setEditLabel, editUrl, setEditUrl, updateLink, removeLink, setResume, handleDownload, handleFileChange, fileError, customFields, customNames, showCustomInput, customName, setCustomName, setShowCustomInput, updateCustomField, addCustomField, addCustomFieldNamed }) {
   return (
     <div>
       <RoleSection title="Job links">
-        <CompanyLinks index={index} role={role} addLink={addLink} editingLink={editingLink} setEditingLink={setEditingLink} editLabel={editLabel} setEditLabel={setEditLabel} editUrl={editUrl} setEditUrl={setEditUrl} updateLink={updateLink} removeLink={removeLink} />
+        <CompanyLinks role={role} addLink={addLink} editingLink={editingLink} setEditingLink={setEditingLink} editLabel={editLabel} setEditLabel={setEditLabel} editUrl={editUrl} setEditUrl={setEditUrl} updateLink={updateLink} removeLink={removeLink} />
       </RoleSection>
       <RoleSection title="Resume">
-        <CompanyResume index={index} role={role} setResume={setResume} handleDownload={handleDownload} handleFileChange={handleFileChange} fileError={fileError} />
+        <CompanyResume role={role} setResume={setResume} handleDownload={handleDownload} handleFileChange={handleFileChange} fileError={fileError} />
       </RoleSection>
       <RoleSection title="Toggles">
-        <CompanyCustom index={index} customFields={customFields} customNames={customNames} showCustomInput={showCustomInput} customName={customName} setCustomName={setCustomName} setShowCustomInput={setShowCustomInput} updateCustomField={updateCustomField} addCustomField={addCustomField} addCustomFieldNamed={addCustomFieldNamed} />
+        <CompanyCustom customFields={customFields} customNames={customNames} showCustomInput={showCustomInput} customName={customName} setCustomName={setCustomName} setShowCustomInput={setShowCustomInput} updateCustomField={updateCustomField} addCustomField={addCustomField} addCustomFieldNamed={addCustomFieldNamed} />
       </RoleSection>
     </div>
   )
@@ -1470,7 +1474,7 @@ function RoleTableView({
                   key={t.name}
                   type="button"
                   onClick={() => addCustomFieldNamed(t.name)}
-                  className="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-500/40 rounded-full text-xs text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all"
+                  className="px-2.5 py-1 bg-white dark:bg-gray-800 border border-[var(--border)] dark:border-[var(--accent)]/40 rounded-full text-xs text-[var(--text-primary)] hover:bg-[var(--accent-soft)] transition-all"
                 >
                   + {t.name}
                 </button>
@@ -1492,7 +1496,7 @@ function RoleTableView({
             error={!!linkError} helperText={linkError || undefined}
             className="flex-[2] min-w-[160px]"
           />
-          <button type="submit" className="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 transition-all whitespace-nowrap">
+          <button type="submit" className="px-3 py-2 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm hover:bg-[var(--accent-hover)] transition-all whitespace-nowrap">
             Add link
           </button>
         </form>
@@ -1500,7 +1504,7 @@ function RoleTableView({
           <div className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No links on this role yet.</div>
         ) : role.links.map((l) => (
           <div key={l.id} className="flex items-center gap-2 px-4 py-2 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
-            <a href={l.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 text-sm text-purple-600 hover:underline truncate">
+            <a href={l.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 text-sm text-[var(--text-primary)] hover:underline truncate">
               {l.label || l.url}
             </a>
             <button type="button" onClick={() => removeLink(l.id)} aria-label={`Remove link ${l.label || l.url}`} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors shrink-0">
@@ -1519,11 +1523,11 @@ function RoleTableView({
             <div className="flex items-center gap-2">
               <Icon name="fileText" size="16" color="#ef4444" />
               <span className="flex-1 min-w-0 text-sm truncate">{role.resume.name}</span>
-              <button type="button" onClick={handleDownload} className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 transition-colors" aria-label="Download resume"><Icon name="download" size="16" /></button>
+              <button type="button" onClick={handleDownload} className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-[var(--text-primary)] transition-colors" aria-label="Download resume"><Icon name="download" size="16" /></button>
               <button type="button" onClick={() => setResume(null)} className="px-2 py-1 text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors" aria-label="Remove resume"><Icon name="x" size="16" /></button>
             </div>
           ) : (
-            <label htmlFor="resume-upload-table" className="flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:border-purple-400 hover:text-purple-500 transition-all cursor-pointer">
+            <label htmlFor="resume-upload-table" className="flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all cursor-pointer">
               <Icon name="upload" size="16" /> Upload resume
               <input id="resume-upload-table" type="file" accept=".pdf,.doc,.docx,.txt,.md" className="sr-only" onChange={handleFileChange} />
             </label>
@@ -1617,7 +1621,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
               type="button"
               aria-pressed={on}
               onClick={() => { setComparing(false); setRoleView(v.id) }}
-              className={`px-3 py-1.5 text-sm font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${on ? 'bg-purple-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700'}`}
+              className={`px-3 py-1.5 text-sm font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${on ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-[var(--accent-soft)]'}`}
             >
               {v.label}
             </button>
@@ -1628,7 +1632,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
             type="button"
             aria-pressed={comparing}
             onClick={() => setComparing((c) => !c)}
-            className={`px-3 py-1.5 text-sm font-medium transition-all border-l border-gray-200 dark:border-gray-700 ${comparing ? 'bg-purple-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700'}`}
+            className={`px-3 py-1.5 text-sm font-medium transition-all border-l border-gray-200 dark:border-gray-700 ${comparing ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-[var(--accent-soft)]'}`}
           >
             All roles
           </button>
@@ -1650,7 +1654,7 @@ function RolesLayoutToggle({ layout, setLayout }) {
           aria-pressed={layout === l.id}
           aria-label={`Roles as ${l.label.toLowerCase()}`}
           onClick={() => setLayout(l.id)}
-          className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${layout === l.id ? 'bg-purple-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-gray-700'}`}
+          className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${layout === l.id ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-[var(--accent-soft)]'}`}
         >
           <Icon name={l.icon} size="14" /> {l.label}
         </button>
@@ -1678,7 +1682,7 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
               data-role-chip={r.title}
               draggable
               {...dragProps(i)}
-              className={`group flex items-center gap-1 rounded-lg transition-all ${draggingRole === i ? 'opacity-40' : ''} ${on ? 'bg-purple-50 dark:bg-purple-500/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              className={`group flex items-center gap-1 rounded-lg transition-all ${draggingRole === i ? 'opacity-40' : ''} ${on ? 'bg-[var(--accent-soft)]' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
             >
               {roles.length > 1 && (
                 <span className="cursor-grab select-none text-gray-300 dark:text-gray-600 pl-2" aria-hidden="true">⠿</span>
@@ -1688,9 +1692,9 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
                 onClick={() => { setActiveRoleId(r.id); setActiveSubTab('links') }}
                 onKeyDown={(e) => onRoleKeyDown(e, i)}
                 aria-pressed={on}
-                className={`flex-1 min-w-0 text-left px-2 py-2 border-l-2 transition-all ${on ? 'border-purple-500' : 'border-transparent'}`}
+                className={`flex-1 min-w-0 text-left px-2 py-2 border-l-2 transition-all ${on ? 'border-[var(--accent)]' : 'border-transparent'}`}
               >
-                <span className={`block truncate text-sm font-medium ${on ? 'text-purple-600' : 'text-gray-700 dark:text-gray-200'}`}>{r.title}</span>
+                <span className={`block truncate text-sm font-medium ${on ? 'text-[var(--text-primary)]' : 'text-gray-700 dark:text-gray-200'}`}>{r.title}</span>
                 <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
                   {r.customFields?.Status || 'No status'} · {r.links.length} {r.links.length === 1 ? 'link' : 'links'}
                 </span>
@@ -1715,7 +1719,7 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
           type="button"
           onClick={() => setShowRoleInput(true)}
           aria-label="Add role"
-          className="mt-2 w-full px-2 py-2 rounded-lg text-sm font-medium border border-dashed border-purple-300 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex items-center justify-center gap-1.5"
+          className="mt-2 w-full px-2 py-2 rounded-lg text-sm font-medium border border-dashed border-[var(--border-strong)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center gap-1.5"
         >
           <Icon name="plusCircle" size="16" /> Add role
         </button>
@@ -1772,7 +1776,6 @@ export function CompanyPage() {
     try { localStorage.setItem(ROLES_LAYOUT_KEY, rolesLayout) } catch { /* storage unavailable */ }
   }, [rolesLayout])
 
-  const companyIndex = companies.findIndex((c) => c.id === id)
 
   // Toggles belong to a ROLE, not the company, so two applications at the same
   // employer can each carry their own recruiter, status and dates.
@@ -1781,7 +1784,10 @@ export function CompanyPage() {
   const activeRole = roles.find((r) => r.id === activeRoleId) || roles[0]
   const customFields = activeRole?.customFields || {}
   const customNames = Object.keys(customFields)
-  const subTabs = ['links', 'resume', ...customNames, 'custom']
+  // Three tabs, not one per field. With the sample data the old strip carried 17 and
+  // scrolled sideways; every field is listed inside the Fields panel anyway, so
+  // nothing here became unreachable -- only the strip got shorter.
+  const subTabs = ['links', 'resume', 'custom']
 
   // Every hook must run on every render, so this useCallback has to stay ABOVE the
   // not-found early return below -- with it underneath, a found company ran one
@@ -1796,10 +1802,10 @@ export function CompanyPage() {
   }, [setCompanies])
 
   if (!company) return (
-    <div className="text-center py-20">
+    <div className="text-center py-16">
       <Icon name="alertCircle" size="64" color="#d1d5db" />
       <p className="text-xl text-gray-400 dark:text-gray-500 mt-4">Company not found</p>
-      <button onClick={() => router.back()} className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all flex items-center gap-2"><Icon name="arrowLeft" size="16" /> Go Back</button>
+      <button onClick={() => router.back()} className="mt-4 px-4 py-2 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-all flex items-center gap-2"><Icon name="arrowLeft" size="16" /> Go Back</button>
     </div>
   )
 
@@ -1900,8 +1906,8 @@ export function CompanyPage() {
     if (customFields[n] !== undefined) { showToast(`"${n}" already exists`, 'warn'); return }
     updateActiveRole((r) => ({ ...r, customFields: { ...r.customFields, [n]: '' } }))
     setCustomName(''); setShowCustomInput(false)
-    setActiveSubTab(n)
-    showToast(`Toggle "${n}" added`, 'success')
+    setActiveSubTab('custom')
+    showToast(`Field "${n}" added`, 'success')
   }
 
   // Adding a role gives the company a second, independent set of toggles.
@@ -1936,15 +1942,14 @@ export function CompanyPage() {
   const updateCustomField = (n, v) => updateActiveRole((r) => ({ ...r, customFields: { ...r.customFields, [n]: v } }))
 
   const getSubTabLabel = (key) => {
-    if (key === 'links') return 'Job Links'
+    if (key === 'links') return 'Links'
     if (key === 'resume') return 'Resume'
-    if (key === 'custom') return 'Add Custom'
-    return key
+    return 'Fields'
   }
 
   return (
-    <div className="min-h-screen workspace-bg py-6 px-4">
-      <button onClick={() => router.back()} className="mb-6 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-300 transition-all flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"><Icon name="arrowLeft" size="16" /> Back</button>
+    <div className="min-h-screen py-8 px-4">
+      <button onClick={() => router.back()} className="mb-6 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-[var(--border-strong)] transition-all flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"><Icon name="arrowLeft" size="16" /> Back</button>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="flex justify-between items-center mb-6 flex-wrap gap-2">
         <h1 className="text-2xl font-bold flex items-center gap-2"><Icon name="briefcase" size="24" /> {company.name}</h1>
@@ -2017,7 +2022,7 @@ export function CompanyPage() {
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               aria-label="Add role"
-              className="px-3 py-2 rounded-lg text-sm font-medium border border-dashed border-purple-300 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex items-center gap-1.5"
+              className="px-3 py-2 rounded-lg text-sm font-medium border border-dashed border-[var(--border-strong)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)] transition-all flex items-center gap-1.5"
             >
               <Icon name="plusCircle" size="16" /> Add role
             </motion.button>
@@ -2083,8 +2088,10 @@ export function CompanyPage() {
       {!comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === 'compact' && (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-1.5 border-b-2 border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto pb-0 tab-nav">
         {subTabs.map((key) => (
-          <button key={key} onClick={() => setActiveSubTab(key)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${activeSubTab === key ? 'active border-purple-500 text-purple-600' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
-            <Icon name={key === 'links' ? 'link' : key === 'resume' ? 'fileText' : key === 'custom' ? 'plusCircle' : 'tag'} size="16" /> {getSubTabLabel(key)}
+          <button key={key} data-subtab={key} onClick={() => setActiveSubTab(key)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${activeSubTab === key ? 'active border-[var(--accent)] text-[var(--text-primary)]' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
+            <Icon name={key === 'links' ? 'link' : key === 'resume' ? 'fileText' : 'tag'} size="16" /> {getSubTabLabel(key)}
+            {key === 'links' && roleLinkCount(activeRole) > 0 && <span className="ml-1.5 text-[var(--text-muted)]">{roleLinkCount(activeRole)}</span>}
+            {key === 'custom' && customNames.length > 0 && <span className="ml-1.5 text-[var(--text-muted)]">{customNames.length}</span>}
           </button>
         ))}
       </motion.div>
@@ -2105,7 +2112,7 @@ export function CompanyPage() {
           <RoleComparisonView roles={roles} />
         ) : (activeRole?.view || DEFAULT_ROLE_VIEW) === 'detailed' ? (
           <RoleDetailedView
-            index={companyIndex} role={activeRole}
+            role={activeRole}
             addLink={addLink} editingLink={editingLink} setEditingLink={setEditingLink}
             editLabel={editLabel} setEditLabel={setEditLabel} editUrl={editUrl} setEditUrl={setEditUrl}
             updateLink={updateLink} removeLink={removeLink}
@@ -2126,19 +2133,13 @@ export function CompanyPage() {
         ) : (
           <>
             {activeSubTab === 'links' && (
-              <CompanyLinks index={companyIndex} role={activeRole} addLink={addLink} editingLink={editingLink} setEditingLink={setEditingLink} editLabel={editLabel} setEditLabel={setEditLabel} editUrl={editUrl} setEditUrl={setEditUrl} updateLink={updateLink} removeLink={removeLink} />
+              <CompanyLinks role={activeRole} addLink={addLink} editingLink={editingLink} setEditingLink={setEditingLink} editLabel={editLabel} setEditLabel={setEditLabel} editUrl={editUrl} setEditUrl={setEditUrl} updateLink={updateLink} removeLink={removeLink} />
             )}
             {activeSubTab === 'resume' && (
-              <CompanyResume index={companyIndex} role={activeRole} setResume={setResume} handleDownload={handleDownload} handleFileChange={handleFileChange} fileError={fileError} />
+              <CompanyResume role={activeRole} setResume={setResume} handleDownload={handleDownload} handleFileChange={handleFileChange} fileError={fileError} />
             )}
             {activeSubTab === 'custom' && (
-              <CompanyCustom index={companyIndex} customFields={customFields} customNames={customNames} showCustomInput={showCustomInput} customName={customName} setCustomName={setCustomName} setShowCustomInput={setShowCustomInput} updateCustomField={updateCustomField} addCustomField={addCustomField} addCustomFieldNamed={addCustomFieldNamed} />
-            )}
-            {customNames.includes(activeSubTab) && (
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 min-w-[140px] truncate masked-text" data-text={activeSubTab}><span>{activeSubTab}</span>:</span>
-                <CustomFieldInput name={activeSubTab} value={customFields[activeSubTab]} onChange={(v) => updateCustomField(activeSubTab, v)} />
-              </div>
+              <CompanyCustom customFields={customFields} customNames={customNames} showCustomInput={showCustomInput} customName={customName} setCustomName={setCustomName} setShowCustomInput={setShowCustomInput} updateCustomField={updateCustomField} addCustomField={addCustomField} addCustomFieldNamed={addCustomFieldNamed} />
             )}
           </>
         )}

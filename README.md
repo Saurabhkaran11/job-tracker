@@ -102,12 +102,14 @@
 
 ## Completed — UI system
 
-- MUI theme built per mode by `buildTheme(mode)` — accent `#9333ea` in light, `#a855f7` in dark, 12px base radius, Inter typeface.
+- One accent, and it is **graphite** rather than a hue — near-black in light, near-white in dark. Colour is left free to mean something.
+- `buildTheme(mode)` points MUI at the same tokens the hand-written controls use — radius, border colour, control height, font size — so an MUI input and a plain button beside it read as one family instead of two.
 - `ThemeModeProvider` owns the mode, mirrors it onto `<html class="dark">` and persists it under `job-tracker-theme`.
 - A first visit follows the OS `prefers-color-scheme`; after that the saved choice wins.
 - Tailwind's `dark:` variant is redefined in `index.css` to follow that class rather than the media query.
 - `App.css` carries a dark block overriding only surfaces, borders and text — the accent ramp, easing and motion are shared, so both modes read as the same design.
-- Status and Priority chips carry both themes; the light pastels glare on charcoal, so each has a translucent dark counterpart.
+- Status and Priority chips keep their hues on purpose: the accent went graphite precisely so colour can carry meaning, and a status chip is where the colour *is* the information.
+- Each chip carries both themes; the light pastels glare on charcoal, so each has a translucent dark counterpart.
 - Toast system built on a React context — `ToastProvider`, `ToastContainer`, and the `useToast()` hook.
 - Toasts animate in and out from the right edge and support `success` and `warn` variants.
 - A central `iconMap` with 21 named icons, consumed through one `<Icon name="..." />` wrapper so icon choices are swappable in one place.
@@ -297,6 +299,30 @@
 - Turbopack's root is pinned in `next.config.mjs`, because a `package-lock.json` above the repo would otherwise be taken as the workspace root.
 - The test harness no longer renders a router. `next/navigation` and `next/link` are mocked against one mutable route, and `mount()` picks the page component the way the `app/` folder would.
 - Nothing about the appearance changed — the styling layer ported across untouched. The redesign is a separate piece of work.
+
+## The design pass
+
+Three problems, fixed together.
+
+### Purple carried everything
+
+- The accent was on the wordmark, every selected control, every count, every link and most borders, so nothing could stand out by being accented.
+- Structure is now neutral and the accent marks only the primary action and the current selection.
+- Every colour resolves from tokens in `app/globals.css`, so light and dark are one definition rather than two hand-tuned palettes.
+- The violet-tinted decoration went with it: the gradient wordmark, the 3D card tilt, the shimmer sweep and the flowing border ring. A hover that only moves the border reads as a control; one that tilts and glows reads as a toy.
+
+### MUI and Tailwind controls were different families
+
+- A single row could carry three radii, two heights and two border weights.
+- `buildTheme()` now overrides `MuiOutlinedInput`, `MuiButton`, `MuiChip` and friends to resolve from the same tokens, and the hand-written controls share one radius.
+- Pill-shaped buttons are gone; the pill shape is reserved for status chips, where the shape says "label, not button".
+
+### Density was inconsistent
+
+- The company page carried one tab per custom field — 17 with the sample data, scrolling sideways. It is three now: Links, Resume, Fields, each with a count. Every field already lived in the Fields panel, so nothing became unreachable.
+- Three panels each repeated a row of large SR No / Status / Links stat cards that said very little; they are gone.
+- The dashboard's three summary cards became one line of text.
+- Page gutters, section gaps and card padding follow one rhythm.
 
 ## Testing
 

@@ -113,10 +113,26 @@ async function mount(path = '/') {
 
 /** The sub-tab strip on the company page. */
 const tabStrip = () => document.querySelector('.tab-nav')
-const tabNames = () => [...tabStrip().querySelectorAll('button')].map((b) => b.textContent.trim())
-const openTab = async (user, name) => {
-  const btn = [...tabStrip().querySelectorAll('button')].find((b) => b.textContent.trim() === name)
-  await user.click(btn)
+const tabNames = () => [...tabStrip().querySelectorAll('button')].map((b) => b.dataset.subtab)
+/** Opens a tab by its key: 'links' | 'resume' | 'custom'. */
+const openTab = async (user, key) => {
+  await user.click(tabStrip().querySelector(`[data-subtab="${key}"]`))
+}
+/**
+ * Fields no longer have a tab each; they live in the Fields panel. This opens that
+ * panel and hands back the control for one field.
+ * Example: const el = await fieldControl(user, 'Status')
+ */
+const fieldControl = async (user, name) => {
+  await openTab(user, 'custom')
+  return waitFor(() => {
+    const row = [...panel().querySelectorAll('div')].find(
+      (d) => d.firstElementChild?.textContent?.replace(/:$/, '').trim() === name,
+    )
+    const el = row?.querySelector('input, textarea, [role="combobox"]')
+    expect(el, `control for ${name}`).toBeTruthy()
+    return el
+  })
 }
 /** The currently rendered panel, for scoping queries. */
 const panel = () => document.querySelector('.panel-container')
@@ -523,7 +539,7 @@ describe('company page — routing and tabs', () => {
     seed([company({ id: 'c1', customFields: { Recruiter: 'Sam', Salary: '180k' } })])
     await mount('/company/c1')
     await waitFor(() => expect(tabStrip()).toBeTruthy())
-    expect(tabNames()).toEqual(['Job Links', 'Resume', 'Recruiter', 'Salary', 'Add Custom'])
+    expect(tabNames()).toEqual(['links', 'resume', 'custom'])
   })
 
   it('switches to every tab, not just the first', async () => {
@@ -531,16 +547,13 @@ describe('company page — routing and tabs', () => {
     seed([company({ id: 'c1', customFields: { Recruiter: 'Sam' } })])
     await mount('/company/c1')
 
-    await openTab(user, 'Resume')
+    await openTab(user, 'resume')
     await waitFor(() => expect(panel().textContent).toMatch(/Upload Resume/i))
 
-    await openTab(user, 'Recruiter')
+    await openTab(user, 'custom')
     await waitFor(() => expect(panel().textContent).toMatch(/Recruiter/))
 
-    await openTab(user, 'Add Custom')
-    await waitFor(() => expect(panel().textContent).toMatch(/Quick add|Add your own toggle/i))
-
-    await openTab(user, 'Job Links')
+    await openTab(user, 'links')
     await waitFor(() => expect(panel().textContent).toMatch(/Add Link/i))
   })
 
@@ -549,9 +562,9 @@ describe('company page — routing and tabs', () => {
     seed([company({ id: 'c1' })])
     await mount('/company/c1')
     for (let i = 0; i < 3; i++) {
-      await openTab(user, 'Resume')
+      await openTab(user, 'resume')
       await waitFor(() => expect(panel().textContent).toMatch(/Upload Resume/i))
-      await openTab(user, 'Job Links')
+      await openTab(user, 'links')
       await waitFor(() => expect(panel().textContent).toMatch(/Add Link/i))
     }
   })
@@ -572,9 +585,9 @@ describe('company page — routing and tabs', () => {
     await mount('/company/c1')
     await waitFor(() => expect(tabStrip()).toBeTruthy())
     expect(screen.queryByText(/link summary/i)).toBeNull()
-    await openTab(user, 'Resume')
+    await openTab(user, 'resume')
     await waitFor(() => expect(screen.queryByText(/resume note/i)).toBeNull())
-    await openTab(user, 'Add Custom')
+    await openTab(user, 'custom')
     await waitFor(() => expect(screen.queryByText(/custom fields note/i)).toBeNull())
   })
 })
@@ -627,7 +640,7 @@ describe('company page — links', () => {
 // ---------------------------------------------------------------------------
 describe('company page — custom field toggles', () => {
   const openCustom = async (user) => {
-    await openTab(user, 'Add Custom')
+    await openTab(user, 'custom')
     await waitFor(() => expect(panel().textContent).toMatch(/Quick add|Add your own toggle/i))
   }
   const chip = (name) =>
@@ -659,7 +672,7 @@ describe('company page — custom field toggles', () => {
     await openCustom(user)
     await user.click(chip('Salary'))
     await waitFor(() => expect(fieldsOf(stored()[0])).toHaveProperty('Salary', ''))
-    expect(tabNames()).toContain('Salary')
+    expect(panel().textContent).toContain('Salary')
   })
 
   it('adds a toggle typed by hand', async () => {
@@ -689,12 +702,7 @@ describe('company page — custom field toggles', () => {
     const user = userEvent.setup()
     seed([company({ id: 'c1', customFields: { Salary: '' } })])
     await mount('/company/c1')
-    await openTab(user, 'Salary')
-    const box = await waitFor(() => {
-      const el = panel().querySelector('input')
-      expect(el).toBeTruthy()
-      return el
-    })
+    const box = await fieldControl(user, 'Salary')
     await user.type(box, '180k')
     await waitFor(() => expect(fieldsOf(stored()[0]).Salary).toBe('180k'))
   })
@@ -707,12 +715,7 @@ describe('company page — each toggle renders its own field type', () => {
     seed([company({ id: 'c1', customFields: { [name]: '' } })])
     await mount('/company/c1')
     const user = userEvent.setup()
-    await openTab(user, name)
-    return waitFor(() => {
-      const el = panel().querySelector('input, textarea, [role="combobox"]')
-      expect(el, `control for ${name}`).toBeTruthy()
-      return el
-    })
+    return fieldControl(user, name)
   }
 
   it('Status renders a dropdown', async () => {
@@ -793,7 +796,7 @@ describe('company page — each toggle renders its own field type', () => {
 // ---------------------------------------------------------------------------
 describe('resume upload', () => {
   const openResume = async (user) => {
-    await openTab(user, 'Resume')
+    await openTab(user, 'resume')
     await waitFor(() => expect(panel().textContent).toMatch(/Upload Resume/i))
   }
 
@@ -827,7 +830,7 @@ describe('resume upload', () => {
     await mount('/company/c1')
     // openResume() waits for the upload prompt, which is replaced by the file row
     // once a resume exists, so this case waits for the file name instead.
-    await openTab(user, 'Resume')
+    await openTab(user, 'resume')
     await waitFor(() => expect(panel().textContent).toMatch(/cv\.pdf/))
     expect(panel().textContent).toContain('cv.pdf')
     expect(screen.getByRole('button', { name: /download/i })).toBeInTheDocument()
@@ -844,13 +847,11 @@ describe('resume upload', () => {
     expect(resumeOf(stored()[0])).toBeNull()
   })
 
-  it('reports the real link count, not a hardcoded zero', async () => {
-    const user = userEvent.setup()
+  it('shows the link count on the Links tab', async () => {
     seed([company({ id: 'c1', links: [{ id: 'l1', url: 'https://a.com' }, { id: 'l2', url: 'https://b.com' }] })])
     await mount('/company/c1')
-    await openResume(user)
-    const stats = [...panel().querySelectorAll('.text-lg')].map((e) => e.textContent)
-    expect(stats).toContain('2')
+    await waitFor(() => expect(tabStrip()).toBeTruthy())
+    expect(tabStrip().querySelector('[data-subtab="links"]').textContent).toContain('2')
   })
 })
 
@@ -865,7 +866,6 @@ describe('several roles at the same company', () => {
     useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     expect(roleNames()).toEqual(['Product Engineer'])
-    expect(tabNames()).toContain('Recruiter')
   })
 
   it('names a role-less legacy company sensibly', async () => {
@@ -898,13 +898,10 @@ describe('several roles at the same company', () => {
     useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
 
-    await openTab(user, 'Recruiter')
-    await waitFor(() => expect(panel().querySelector('input')).toBeTruthy())
-    expect(panel().querySelector('input').value).toBe('Sam Okafor')
+    expect((await fieldControl(user, 'Recruiter')).value).toBe('Sam Okafor')
 
     await user.click(roleStrip().querySelector('[data-role-chip="Research Engineer"]').querySelector('button'))
-    await openTab(user, 'Recruiter')
-    await waitFor(() => expect(panel().querySelector('input')?.value).toBe('Dana Whitfield'))
+    await waitFor(async () => expect((await fieldControl(user, 'Recruiter')).value).toBe('Dana Whitfield'))
 
     // writing to one role must not touch the other
     expect(fieldsOf(stored()[0], 0).Recruiter).toBe('Sam Okafor')
@@ -923,7 +920,7 @@ describe('several roles at the same company', () => {
     useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await user.click(roleStrip().querySelector('[data-role-chip="Role B"]').querySelector('button'))
-    await openTab(user, 'Add Custom')
+    await openTab(user, 'custom')
     await waitFor(() => expect(panel().textContent).toMatch(/Quick add/i))
     await user.click([...panel().querySelectorAll('button')].find((b) => b.textContent.trim() === 'Salary'))
     await waitFor(() => expect(fieldsOf(stored()[0], 1)).toHaveProperty('Salary'))
@@ -1624,7 +1621,7 @@ describe('links and resume are per role', () => {
     useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await pickRole(user, 'Role B')
-    await openTab(user, 'Resume')
+    await openTab(user, 'resume')
     await waitFor(() => expect(panel().querySelector('input[type="file"]')).toBeTruthy())
     await user.upload(panel().querySelector('input[type="file"]'), new File(['x'], 'role-b.pdf', { type: 'application/pdf' }))
     await waitFor(() => expect(resumeOf(stored()[0], 1)).toBeTruthy())
@@ -1641,7 +1638,7 @@ describe('links and resume are per role', () => {
       ],
     }])
     await mount('/')
-    expect(await screen.findByText(/3 links added/i)).toBeInTheDocument()
+    expect(await screen.findByText(/3 links/i)).toBeInTheDocument()
   })
 })
 
@@ -1787,8 +1784,10 @@ describe('bulk add — one form fills every section', () => {
     await mount(`/company/${stored()[0].id}`)
     await waitFor(() => expect(screen.getByTestId('role-strip')).toBeTruthy())
     expect(screen.getByTestId('role-strip').textContent).toContain('Platform Engineer')
-    expect(tabNames()).toContain('Salary')
     await waitFor(() => expect(panel().textContent).toContain('Careers'))
+    // fields live in the Fields panel now, not on a tab of their own
+    await openTab(userEvent.setup(), 'custom')
+    await waitFor(() => expect(panel().textContent).toContain('Salary'))
   })
 })
 
@@ -1888,7 +1887,7 @@ describe('persistence and resilience', () => {
     seed([{ id: 'c1', name: 'Anthropic', links: [], resume: null }])
     await mount('/company/c1')
     await waitFor(() => expect(tabStrip()).toBeTruthy())
-    expect(tabNames()).toEqual(['Job Links', 'Resume', 'Add Custom'])
+    expect(tabNames()).toEqual(['links', 'resume', 'custom'])
   })
 
   it('counts links and resumes in the dashboard stats', async () => {
@@ -1898,10 +1897,12 @@ describe('persistence and resilience', () => {
     ])
     await mount('/')
     await screen.findAllByText('A')
+    // the summary reads as a sentence now ("2 companies · 1 link · 1 resume") rather
+    // than three cards, so it is matched case-insensitively
     const text = document.body.textContent
-    expect(text).toMatch(/Companies/)
-    expect(text).toMatch(/Links/)
-    expect(text).toMatch(/Resumes/)
+    expect(text).toMatch(/companies/i)
+    expect(text).toMatch(/links/i)
+    expect(text).toMatch(/resumes/i)
   })
 })
 
