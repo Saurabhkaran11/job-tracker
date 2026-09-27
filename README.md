@@ -300,6 +300,12 @@
 - The test harness no longer renders a router. `next/navigation` and `next/link` are mocked against one mutable route, and `mount()` picks the page component the way the `app/` folder would.
 - Nothing about the appearance changed — the styling layer ported across untouched. The redesign is a separate piece of work.
 
+### Hydration
+
+- Theme mode and the roles layout used to initialise straight from `localStorage`, which meant the server's HTML and the client's first render disagreed — a hydration mismatch. The page recovered, but React threw the server tree away and re-rendered to do it.
+- Both now start from a deterministic default and adopt the saved value in an effect.
+- A small inline script at the top of `<body>` puts `class="dark"` on the document before first paint, so nothing flashes light while that catches up. It sits in the body because App Router owns `<head>` and a script placed there is never executed.
+
 ## The design pass
 
 Three problems, fixed together.

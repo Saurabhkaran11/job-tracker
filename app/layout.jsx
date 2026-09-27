@@ -17,6 +17,17 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
+        {/* First thing in the body, so a saved dark preference is on the document
+            before anything paints. The theme provider only reads storage after mount --
+            reading it during the first render is what broke hydration -- so without
+            this the page would flash light first.
+            App Router owns <head>; a script placed there is not executed, so it goes
+            here instead. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=localStorage.getItem('job-tracker-theme');if(m!=='dark'&&m!=='light')m=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';if(m==='dark')document.documentElement.classList.add('dark')}catch(e){}})()`,
+          }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

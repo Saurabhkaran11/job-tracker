@@ -624,7 +624,7 @@ const useThemeMode = () => React.useContext(ThemeModeContext)
 // Reads the saved choice, falling back to the OS preference on a first visit.
 // Wrapped because storage can throw in a private window.
 // Example: no saved value + OS in dark mode -> 'dark'.
-function initialThemeMode() {
+function readThemeMode() {
   try {
     const saved = localStorage.getItem(THEME_KEY)
     if (saved === 'dark' || saved === 'light') return saved
@@ -638,16 +638,30 @@ function initialThemeMode() {
 // onto App.css's own .dark rules, and persists the choice.
 // Example: toggleMode() from 'light' -> <html class="dark"> and THEME_KEY = 'dark'.
 export function ThemeModeProvider({ children }) {
-  const [mode, setMode] = React.useState(initialThemeMode)
+  // Starts at the same value the server rendered, then adopts the saved preference on
+  // mount. Reading localStorage during the first render made the server's HTML and the
+  // client's first pass disagree, which is a hydration mismatch -- the page recovered,
+  // but React discarded and re-rendered the tree to do it. The inline script in
+  // app/layout.jsx has already set the class before paint, so there is no flash while
+  // this catches up.
+  // One piece of state, so adopting the saved preference is a single update.
+  const [themeState, setThemeState] = React.useState({ mode: 'light', hydrated: false })
+  const { mode, hydrated } = themeState
+
+  // The extra render IS the point: the first render has to match what the server sent,
+  // and only then can the saved preference be adopted. It happens once, on mount.
+  // oxlint-disable-next-line react/set-state-in-effect
+  React.useEffect(() => { setThemeState({ mode: readThemeMode(), hydrated: true }) }, [])
 
   React.useEffect(() => {
+    if (!hydrated) return
     document.documentElement.classList.toggle('dark', mode === 'dark')
     try { localStorage.setItem(THEME_KEY, mode) } catch { /* storage unavailable */ }
-  }, [mode])
+  }, [mode, hydrated])
 
   const value = React.useMemo(() => ({
     mode,
-    toggleMode: () => setMode((m) => (m === 'dark' ? 'light' : 'dark')),
+    toggleMode: () => setThemeState((t) => ({ ...t, mode: t.mode === 'dark' ? 'light' : 'dark' })),
   }), [mode])
 
   const theme = React.useMemo(() => buildTheme(mode), [mode])
@@ -1598,7 +1612,7 @@ const ROLES_LAYOUTS = [
 ]
 const DEFAULT_ROLES_LAYOUT = 'toolbar'
 
-function initialRolesLayout() {
+function readRolesLayout() {
   try {
     const saved = localStorage.getItem(ROLES_LAYOUT_KEY)
     if (ROLES_LAYOUTS.some((l) => l.id === saved)) return saved
@@ -1770,11 +1784,21 @@ export function CompanyPage() {
   // where being a render behind does not matter.
   const dragFromRef = useRef(null)
   const [draggingRole, setDraggingRole] = useState(null)
-  const [rolesLayout, setRolesLayout] = useState(initialRolesLayout)
+  // Same reasoning as the theme: read after mount, not during the first render, so the
+  // server's HTML and the client's first pass agree.
+  const [layout, setLayout] = useState({ id: DEFAULT_ROLES_LAYOUT, ready: false })
+  const rolesLayout = layout.id
+  const setRolesLayout = (id) => setLayout({ id, ready: true })
+
+  // Same reasoning as the theme: the first render has to match the server, so the
+  // saved layout is adopted after it.
+  // oxlint-disable-next-line react/set-state-in-effect
+  useEffect(() => { setLayout({ id: readRolesLayout(), ready: true }) }, [])
 
   useEffect(() => {
-    try { localStorage.setItem(ROLES_LAYOUT_KEY, rolesLayout) } catch { /* storage unavailable */ }
-  }, [rolesLayout])
+    if (!layout.ready) return
+    try { localStorage.setItem(ROLES_LAYOUT_KEY, layout.id) } catch { /* storage unavailable */ }
+  }, [layout])
 
 
   // Toggles belong to a ROLE, not the company, so two applications at the same
