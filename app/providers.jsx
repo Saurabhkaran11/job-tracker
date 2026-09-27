@@ -3,6 +3,7 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '../src/queryClient'
 import { ThemeModeProvider, ToastProvider } from '../src/App'
+import PinGate from '../src/PinGate'
 
 // The provider stack that used to sit in App.jsx's default export. Router providers
 // are gone: Next owns routing now.
@@ -11,7 +12,9 @@ export default function Providers({ children }) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeModeProvider>
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <PinGate>{children}</PinGate>
+        </ToastProvider>
       </ThemeModeProvider>
     </QueryClientProvider>
   )

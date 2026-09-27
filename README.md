@@ -8,6 +8,30 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSaurabhkaran11%2Fjob-tracker)
 
+## PIN gate
+
+The dashboard sits behind a PIN entry screen.
+
+- The PIN for this build is **`1234`**.
+- Change it by setting `NEXT_PUBLIC_APP_PIN` — in `.env.local` for local development, and in the Vercel project's environment variables for the deployment. See `.env.local.example`.
+- An unlock is remembered in `sessionStorage`, so it asks once per browser session and again after the tab is closed.
+- A wrong PIN clears the box and says so; the guarded content is never rendered until the right one is entered.
+
+### What this does and does not do
+
+This is worth being precise about, because the name suggests more protection than it provides.
+
+- The check runs **in the browser**, in an app whose every screen is a client component.
+- `NEXT_PUBLIC_` variables are compiled into the JavaScript the browser downloads, so the PIN is readable by anyone who opens devtools or reads the bundle.
+- This repository is **public**, so a PIN committed here is readable by anyone who reads the source. That is why the value lives in an environment variable rather than in the code.
+- The tracked data lives in `localStorage`, which is readable in devtools whether or not the gate has been passed.
+- So it keeps the dashboard off the screen of someone glancing over your shoulder. It is **not** access control.
+
+### If you want actual protection
+
+- **Vercel Deployment Protection** — a password or SSO check enforced at the edge, before any of the app is served. Project settings → Deployment Protection. This is the smallest real fix.
+- **An auth provider** in front of the app, if you ever want per-user data rather than one browser's `localStorage`.
+
 ## Deploy
 
 The app is a standard Next.js App Router project, so Vercel needs no configuration — no `vercel.json`, no environment variables, no build overrides. It detects Next.js, runs `next build`, and serves it.
@@ -501,13 +525,14 @@ Three problems, fixed together.
 
 ## Testing
 
-- One consolidated suite in `src/App.test.jsx` — **159 tests, all passing**.
+- One consolidated suite in `src/App.test.jsx` — **167 tests, all passing**.
 - Runner is Vitest with jsdom and Testing Library; config lives in `vitest.config.js`, setup in `src/setupTests.js`.
 - Everything is driven through the rendered UI, so a passing test means a user could actually do that thing.
 - Assertions mostly read `localStorage` back, since that is the app's source of truth.
 
 ### What it covers
 
+- The PIN gate: hiding what it guards, rejecting a wrong PIN, clearing the box, opening on the right one, accepting Enter, staying open for the session, asking again once the session is gone, and masking what is typed.
 - Adding a company by button and by Enter, and the box clearing afterwards.
 - Duplicate names rejected case-insensitively, and empty/whitespace names rejected.
 - The search icon and Add button both rendering.
@@ -559,6 +584,7 @@ Three problems, fixed together.
 - `src/App.test.jsx` — the consolidated test suite.
 - `src/setupTests.js` — test setup: jest-dom matchers, storage shim, per-test reset.
 - `src/queryClient.js` — the shared TanStack QueryClient, in its own module so Fast Refresh keeps working.
+- `src/PinGate.jsx` — the PIN entry screen that wraps the app.
 - `vitest.config.js` — Vitest config, kept separate from the app build.
 - `next.config.mjs` — Next config.
 - `postcss.config.mjs` — Tailwind v4 through PostCSS.

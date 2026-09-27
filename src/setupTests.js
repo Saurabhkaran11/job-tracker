@@ -21,13 +21,19 @@ function createMemoryStorage() {
   }
 }
 
-if (typeof globalThis.localStorage === 'undefined') {
+function installStorage(name) {
+  if (typeof globalThis[name] !== 'undefined') return
   const storage = createMemoryStorage()
-  Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true })
+  Object.defineProperty(globalThis, name, { value: storage, configurable: true })
   if (globalThis.window) {
-    Object.defineProperty(globalThis.window, 'localStorage', { value: storage, configurable: true })
+    Object.defineProperty(globalThis.window, name, { value: storage, configurable: true })
   }
 }
+
+// The PIN gate remembers an unlock in sessionStorage, which this jsdom build omits for
+// the same reason it omits localStorage.
+installStorage('localStorage')
+installStorage('sessionStorage')
 
 beforeEach(() => {
   // Every test starts from an empty tracker, so one test's companies can never leak

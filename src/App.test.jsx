@@ -12,11 +12,12 @@
  *   expect(stored()[0].name).toBe('Stripe')
  */
 import React from 'react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, cleanup, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { HomePage, CompanyPage, ThemeModeProvider, ToastProvider } from './App'
+import PinGate from './PinGate'
 import { queryClient } from './queryClient'
 
 /**
@@ -1903,6 +1904,89 @@ describe('sample data merges instead of replacing', () => {
     const anthropic = stored().find((c) => c.name === 'Anthropic')
     expect(rolesOf(anthropic)).toHaveLength(2)
     expect(fieldsOf(anthropic, 0).Recruiter).not.toBe(fieldsOf(anthropic, 1).Recruiter)
+  })
+})
+
+// ---------------------------------------------------------------------------
+describe('the PIN gate', () => {
+  const Guarded = () => (
+    <PinGate><div>dashboard contents</div></PinGate>
+  )
+  const renderGate = async () => {
+    const r = render(<Guarded />)
+    await screen.findByTestId('pin-gate')
+    return r
+  }
+
+  beforeEach(() => {
+    try { sessionStorage.clear() } catch { /* storage unavailable */ }
+  })
+
+  it('hides what it guards until a PIN is entered', async () => {
+    await renderGate()
+    expect(screen.queryByText('dashboard contents')).toBeNull()
+    expect(screen.getByLabelText('PIN')).toBeInTheDocument()
+  })
+
+  it('rejects the wrong PIN and keeps the contents hidden', async () => {
+    const user = userEvent.setup()
+    await renderGate()
+    await user.type(screen.getByLabelText('PIN'), '9999')
+    await user.click(screen.getByRole('button', { name: /unlock/i }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/not right/i)
+    expect(screen.queryByText('dashboard contents')).toBeNull()
+  })
+
+  it('clears the box after a wrong PIN', async () => {
+    const user = userEvent.setup()
+    await renderGate()
+    await user.type(screen.getByLabelText('PIN'), '9999')
+    await user.click(screen.getByRole('button', { name: /unlock/i }))
+    await waitFor(() => expect(screen.getByLabelText('PIN')).toHaveValue(''))
+  })
+
+  it('opens on the right PIN', async () => {
+    const user = userEvent.setup()
+    await renderGate()
+    await user.type(screen.getByLabelText('PIN'), '1234')
+    await user.click(screen.getByRole('button', { name: /unlock/i }))
+    expect(await screen.findByText('dashboard contents')).toBeInTheDocument()
+  })
+
+  it('accepts Enter as well as the button', async () => {
+    const user = userEvent.setup()
+    await renderGate()
+    await user.type(screen.getByLabelText('PIN'), '1234{Enter}')
+    expect(await screen.findByText('dashboard contents')).toBeInTheDocument()
+  })
+
+  it('stays open for the rest of the session', async () => {
+    const user = userEvent.setup()
+    await renderGate()
+    await user.type(screen.getByLabelText('PIN'), '1234{Enter}')
+    await screen.findByText('dashboard contents')
+
+    cleanup()
+    render(<Guarded />)
+    expect(await screen.findByText('dashboard contents')).toBeInTheDocument()
+  })
+
+  it('asks again once the session is gone', async () => {
+    const user = userEvent.setup()
+    await renderGate()
+    await user.type(screen.getByLabelText('PIN'), '1234{Enter}')
+    await screen.findByText('dashboard contents')
+
+    cleanup()
+    sessionStorage.clear()
+    render(<Guarded />)
+    expect(await screen.findByTestId('pin-gate')).toBeInTheDocument()
+    expect(screen.queryByText('dashboard contents')).toBeNull()
+  })
+
+  it('masks what is typed', async () => {
+    await renderGate()
+    expect(screen.getByLabelText('PIN')).toHaveAttribute('type', 'password')
   })
 })
 
