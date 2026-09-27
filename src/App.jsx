@@ -1209,7 +1209,7 @@ export function HomePage() {
       {!showTracker && !collapsed && (
       <AnimatePresence mode="popLayout">
         {filtered.length === 0 ? (
-          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
+          <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="text-center py-16">
             <Icon name="briefcase" size="64" color="#d1d5db" />
             <p className="text-xl text-[var(--text-muted)] mt-4">{query ? 'No matching companies.' : 'Add a company to get started'}</p>
             <p className="text-sm text-[var(--text-muted)] mt-1">Double-click a company name to edit it</p>
@@ -1225,7 +1225,7 @@ export function HomePage() {
             )}
           </motion.div>
         ) : (
-          <motion.div key="grid" data-testid="company-grid" className="grid grid-cols-1 gap-3">
+          <motion.div key="grid" data-testid="company-grid" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="grid grid-cols-1 gap-3">
             {filtered.map((c, i) => (
               <CompanyCard key={c.id} company={c} onRemove={removeCompany} onEdit={editCompany} cardStyle={cardStyle} index={i} />
             ))}
@@ -1351,13 +1351,22 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
 
   return (
     <div>
+      {/* AnimatePresence wraps the field rows ONLY. It used to enclose the three
+          conditional blocks below as well, and those have no key -- AnimatePresence
+          gives every child an implicit one, so the unkeyed siblings all arrived as ""
+          and React reported "two children with the same key". Scoping it to the keyed
+          list removes the collision, and the blocks below are plain conditionals that
+          do not need presence tracking.
+          Example: adding a field animates its row in; nothing else is tracked. */}
       <AnimatePresence>
-      {customNames.map((cn) => (
-          <motion.div key={cn} className="flex items-center gap-3 mb-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ scale: 1.01 }}>
+        {customNames.map((cn) => (
+          <motion.div key={cn} className="flex items-center gap-3 mb-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <span className="text-sm font-semibold text-[var(--text-primary)] min-w-[140px] truncate masked-text" data-text={cn}><span>{cn}</span>:</span>
             <CustomFieldInput name={cn} value={customFields[cn]} onChange={(v) => updateCustomField(cn, v)} />
           </motion.div>
-      ))}
+        ))}
+      </AnimatePresence>
+
       {!showCustomInput && availablePresets.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
           <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2">Quick add</Typography>
@@ -1387,7 +1396,6 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
           <Btn icon="x" onClick={() => setShowCustomInput(false)} aria-label="Cancel field" />
         </motion.div>
       )}
-    </AnimatePresence>
     </div>
   )
 }

@@ -309,6 +309,16 @@
 - The test harness no longer renders a router. `next/navigation` and `next/link` are mocked against one mutable route, and `mount()` picks the page component the way the `app/` folder would.
 - Nothing about the appearance changed — the styling layer ported across untouched. The redesign is a separate piece of work.
 
+### AnimatePresence
+
+Three blocks use it, and each was checked in a running browser rather than read.
+
+- **Toasts** — correct all along. Measured mid-flight: enters at `opacity 0.02` and `translateX 39px`, settles at `1` / `none`, exits through `opacity 0.44`, then unmounts.
+- **Dashboard card list ↔ empty state** — the two children had no `exit`, so the outgoing one was dropped instantly and the wrapper was doing nothing on the way out. Both now carry an exit.
+- **Custom fields** — a real bug. The wrapper enclosed the keyed field rows *and* three unkeyed conditional blocks below them. `AnimatePresence` gives every child an implicit key, so the unkeyed siblings all arrived as `""` and React logged *"Encountered two children with the same key"* on every view and tab change. It is now scoped to the keyed rows only; the conditional blocks sit outside it and do not need presence tracking.
+
+Verified after the fix: zero duplicate-key warnings across five view switches, four tab switches and the add-field toggle, and a clean console on a fresh load.
+
 ### Motion
 
 - Everything the design pass switched off has been removed rather than left stubbed: the shimmer sweep, the flowing border ring, their orphaned `@keyframes`, the `@property --flow-angle`, and the corner dots.
