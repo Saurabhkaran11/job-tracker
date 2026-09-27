@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+/* Tailwind v4 ships `dark:` wired to prefers-color-scheme. This app has an explicit
+   toggle instead, so the variant is redefined to follow a `.dark` class on <html>.
+   Example: <html class="dark"> makes `dark:bg-gray-800` apply. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #fafafa;
+  color: #1f2937;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark body {
+  background: #0f1117;
+  color: #e5e7eb;
+}
+
+#root {
+  width: 100%;
+  min-height: 100svh;
+}
