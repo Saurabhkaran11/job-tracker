@@ -18,6 +18,66 @@
 
 ---
 
+## Tech stack
+
+Versions are what is actually installed, not the ranges in `package.json`.
+
+### Framework and rendering
+
+- **Next.js 16.3.6** — App Router; the file tree under `app/` owns the URLs.
+- **React 19.3.0** — every component is a client component, because the app is entirely interaction-driven.
+- **Turbopack** — the bundler Next 16 builds with.
+
+### Styling
+
+- **Tailwind CSS 4.3.3** — utility classes, wired through `@tailwindcss/postcss` rather than a bundler plugin.
+- **A hand-written token layer** in `app/globals.css` — surfaces, text, borders, the accent, control height and radius, defined once for light and once for dark.
+- **`app/App.css`** — the card and page-wash layer, with every colour resolved from those tokens.
+
+### UI components
+
+- **MUI 9.4.0** (`@mui/material`) — text fields, select, chip, alert, typography, divider.
+- **Emotion 11.14** (`@emotion/react`, `@emotion/styled`) — MUI's styling engine; a peer dependency rather than something imported directly.
+- `buildTheme()` overrides MUI's radius, border colour, control height and font size, so MUI controls and the hand-written ones read as one family.
+
+### Animation
+
+- **Framer Motion 13.4.4** — the only animation library.
+- One CSS keyframe animation, `tabIndicator`, for the sub-tab underline.
+
+### Data and state
+
+- **TanStack Query 5.104.0** — the in-memory cache over `localStorage`, with `staleTime` and `gcTime` at `Infinity`.
+- **`localStorage`** — the only persistence; there is no backend.
+
+### Forms and validation
+
+- **React Hook Form 7.89.0** — the add-link form.
+- **Zod 3.25.76** — schemas for company names and link URLs.
+- **`@hookform/resolvers` 5.9.1** — binds the two together.
+
+### Icons
+
+- **`@tabler/icons-react` 3.48.0** — 24 icons, all reached through one `Icon` wrapper and an `iconMap`, so the set is swappable in one place.
+
+### Testing and tooling
+
+- **Vitest 3.2.7** — test runner, configured separately from the app build in `vitest.config.js`.
+- **jsdom 30.1.1** — the DOM the suite runs against.
+- **Testing Library** — `react` 16.3.3, `user-event` 14.6.7, `jest-dom` 7.0.1.
+- **Oxlint 1.85.0** — linting.
+
+### Declared but never imported
+
+These sit in `package.json` and ship nothing. Worth pruning before a production build.
+
+- `@chakra-ui/react`, `@chakra-ui/icons`
+- `grommet`, `grommet-icons`
+- `primereact`, `primeicons`
+- `@phosphor-icons/react`
+- `react-icons`
+- `@mui/icons-material`
+
 ## Completed — data layer
 
 - `localStorage` persistence via `loadCompanies()` and `persist()`, both wrapped in `try/catch` so a quota error or corrupt payload degrades to an empty list instead of a white screen.
@@ -295,7 +355,7 @@
 - No application-status field — there is nothing yet for `applied` / `interviewing` / `offer` / `rejected`.
 - Deleting a company is immediate with no undo — only the `window.confirm` prompt guards it.
 - No CI pipeline yet, though `npm test` runs the full suite locally.
-- Several UI libraries ship in `dependencies` but are unused at runtime — Chakra, Grommet, PrimeReact, Phosphor, react-icons — and are worth pruning before a production build.
+- Nine UI libraries are declared in `dependencies` but never imported — listed under Tech stack — and are worth pruning before a production build.
 
 ---
 
@@ -324,6 +384,38 @@ Verified after the fix: zero duplicate-key warnings across five view switches, f
 - Everything the design pass switched off has been removed rather than left stubbed: the shimmer sweep, the flowing border ring, their orphaned `@keyframes`, the `@property --flow-angle`, and the corner dots.
 - `card-perspective`, `card-magnetic` and `magnetic-snap` were three class names doing the same thing — a border colour on hover — each still declaring transitions for a transform and a shadow that no longer moved. They are one `.card-hover`.
 - What remains was verified running in the browser, not assumed: the tab indicator animation fires on a tab change, panels swap, the sample and bulk panels open and close, and cards and buttons carry real transitions.
+
+#### Motion graphics inventory
+
+Framer Motion does nearly all of it; there is exactly one CSS keyframe animation left.
+
+**Framer Motion**
+
+- Entrance transitions on the page header, the search form, the control row, the tracker table and the company cards — each an `initial` → `animate` fade with a small upward travel and a staggered `delay`.
+- `AnimatePresence` on the toast stack — enters from `translateX(40px)` at `opacity 0`, exits the same way, then unmounts.
+- `AnimatePresence` on the dashboard swap between the card list and the empty state, both children carrying an `exit`.
+- `AnimatePresence` on the custom-field rows, so adding or removing a field fades its row.
+- `whileHover` and `whileTap` on link rows and the bulk-add form.
+- `layout` on the link list, so removing one settles the rest.
+- The company page's panel swap is a plain keyed re-mount, deliberately **not** `AnimatePresence` — the presence version wedged, as described above.
+
+**CSS**
+
+- `tabIndicator` — the sub-tab underline wiping in from the left; the only `@keyframes` in the file.
+- `.card-hover` — a border-colour transition, the one hover treatment a card gets.
+- `.masked-text` — an underline that wipes in from the right and out to the left.
+- `.page-bg` — a background-colour transition when the theme flips.
+- Control transitions on colour, background and border at 150ms.
+
+**Deliberately removed**
+
+The first version leaned on decorative motion that fought the content. All of it is gone, not merely switched off.
+
+- 3D card tilt on hover — `rotateY`, `rotateX`, `scale`.
+- A white shimmer sweeping across every card on a 2-second loop.
+- A rotating conic-gradient border ring driven by an animated `@property`.
+- Floating and magnetic-dock hover lifts.
+- Corner accent dots that faded in on hover.
 
 ### A radius token that hijacked Tailwind
 
