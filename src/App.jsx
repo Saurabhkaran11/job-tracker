@@ -124,6 +124,53 @@ function makeCompany(name, role = {}) {
   }
 }
 
+// One button, five variants. Before this the app had a dozen different button shapes
+// -- three radii, two heights, pills next to rectangles, some with borders and some
+// without -- because each was styled where it was written. Everything routes through
+// here now, so a button cannot drift from its neighbours.
+//
+//   primary   the one action a screen is for (Add, Add link, Save all)
+//   secondary the default: a surface with a hairline border
+//   selected  a toggle that is currently on -- a light accent wash, not a solid slab
+//   ghost     low emphasis, no border until hover
+//   danger    destructive, red on hover
+//
+// Example: <Btn variant="primary" icon="add">Add</Btn>
+const SEG_WRAP = 'inline-flex rounded-lg border border-[var(--border)] overflow-hidden'
+const SEG_BASE = 'inline-flex items-center justify-center gap-1.5 h-9 px-3 text-sm font-medium whitespace-nowrap transition-colors border-r border-[var(--border)] last:border-r-0'
+const SEG_ON = 'bg-[var(--accent-soft)] text-[var(--accent)]'
+const SEG_OFF = 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]'
+
+const BTN_BASE = 'inline-flex items-center justify-center gap-2 h-9 px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors disabled:opacity-50 disabled:pointer-events-none'
+
+const BTN_VARIANTS = {
+  primary: 'bg-[var(--accent)] text-[var(--on-accent)] hover:bg-[var(--accent-hover)] border border-transparent',
+  secondary: 'bg-[var(--surface-1)] text-[var(--text-primary)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-2)]',
+  selected: 'bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent-border)]',
+  ghost: 'bg-transparent text-[var(--text-secondary)] border border-transparent hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)]',
+  danger: 'bg-transparent text-[var(--text-muted)] border border-transparent hover:text-red-600 hover:bg-[var(--surface-2)]',
+}
+
+function Btn({ variant = 'secondary', icon, iconSize = '16', className = '', children, ...rest }) {
+  return (
+    <button type="button" className={`${BTN_BASE} ${BTN_VARIANTS[variant] || BTN_VARIANTS.secondary} ${className}`} {...rest}>
+      {icon && <Icon name={icon} size={iconSize} />}
+      {children}
+    </button>
+  )
+}
+
+// An icon-only button. Square, so a row of them lines up with the text buttons beside
+// them instead of being narrower.
+// Example: <IconBtn variant="danger" icon="trash" aria-label="Remove Stripe" />
+function IconBtn({ variant = 'ghost', icon, iconSize = '16', className = '', ...rest }) {
+  return (
+    <button type="button" className={`${BTN_BASE} ${BTN_VARIANTS[variant] || BTN_VARIANTS.ghost} w-9 px-0 ${className}`} {...rest}>
+      <Icon name={icon} size={iconSize} />
+    </button>
+  )
+}
+
 // Lets the tab strip show a count without reaching into the role twice.
 // Example: roleLinkCount({ links: [a, b] }) === 2
 const roleLinkCount = (role) => role?.links?.length ?? 0
@@ -424,12 +471,8 @@ function BulkAddPanel({ companies, onSubmit, onClose }) {
         <Typography variant="subtitle2" className="font-semibold text-[var(--text-primary)] flex-1">
           Add everything at once
         </Typography>
-        <button type="submit" className="px-3 py-1.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm font-medium hover:bg-[var(--accent-hover)] transition-all">
-          Save all
-        </button>
-        <button type="button" onClick={onClose} aria-label="Close bulk add" className="px-2 py-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
-          <Icon name="x" size="16" />
-        </button>
+        <Btn variant="primary" type="submit">Save all</Btn>
+        <IconBtn icon="x" onClick={onClose} aria-label="Close bulk add" />
       </div>
 
       <div className="p-4 space-y-4">
@@ -488,21 +531,8 @@ function SampleDataPanel({ onLoad, onClose }) {
         <Typography variant="subtitle2" className="font-semibold text-[var(--text-primary)] flex-1">
           Sample data for every feature
         </Typography>
-        <button
-          type="button"
-          onClick={onLoad}
-          className="px-3 py-1.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm font-medium hover:bg-[var(--accent-hover)] transition-all"
-        >
-          Load it
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close sample data"
-          className="px-2 py-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-        >
-          <Icon name="x" size="16" />
-        </button>
+        <Btn variant="primary" onClick={onLoad}>Load it</Btn>
+        <IconBtn icon="x" onClick={onClose} aria-label="Close sample data" />
       </div>
       <div className="max-h-[420px] overflow-y-auto">
         {Object.entries(groups).map(([group, rows]) => (
@@ -799,8 +829,8 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
             <div className="magnetic-dot magnetic-dot-3" />
           </>
         )}
-        <div className="flex items-start gap-3 mb-1.5">
-          <div className="flex-shrink-0 mt-0.5">
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0">
             {cardStyle === 'compact' ? (
               <span className="compact-number">{index + 1}</span>
             ) : (
@@ -811,17 +841,28 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
             {editing ? (
               <TextField size="small" value={editName} onChange={(e) => setEditName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && saveEdit()} onBlur={saveEdit} autoFocus className="w-full" />
             ) : (
-              <Typography variant="subtitle1" className="font-semibold cursor-text hover:text-[var(--text-primary)] truncate" onDoubleClick={() => { setEditName(company.name); setEditing(true) }}>
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-[var(--text-primary)] cursor-text truncate" onDoubleClick={() => { setEditName(company.name); setEditing(true) }}>
                 <Icon name="briefcase" size="16" /> {company.name}
-              </Typography>
+              </span>
             )}
-            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-              <Chip size="small" label={companyLinks.length} color="primary" />
-              {/* Surfaces a second application at the same employer on the dashboard,
-                  which would otherwise only be visible inside the company page. */}
+            {/* A compact row used to be a name with a bare count chip under it, which
+                left most of the row empty and said nothing about the application. It
+                now carries what you would actually scan for: the stage of each role,
+                how many links, and whether a CV is attached.
+                Example: "Anthropic · Offer · Phone Screen · 3 links · CV" */}
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap text-xs text-[var(--text-secondary)]">
+              {normaliseRoles(company).map((r) => (
+                r.customFields?.Status ? (
+                  <span key={r.id} title={r.title} className={`px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[r.customFields.Status] || NEUTRAL_CHIP}`}>
+                    {r.customFields.Status}
+                  </span>
+                ) : null
+              ))}
               {normaliseRoles(company).length > 1 && (
-                <Chip size="small" variant="outlined" label={`${normaliseRoles(company).length} roles`} />
+                <span className="text-[var(--text-muted)]">{normaliseRoles(company).length} roles</span>
               )}
+              <span>{companyLinks.length} {companyLinks.length === 1 ? 'link' : 'links'}</span>
+              {companyResume && <span className="text-[var(--text-muted)]">CV</span>}
             </div>
           </div>
           {/* removeCompany was fully implemented in HomePage -- confirm dialog, toast
@@ -831,16 +872,13 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
               navigation to /company/:id before the confirm dialog can open.
               Example: click the bin -> confirm "Remove \"Stripe\"?" -> row disappears,
               and the card does NOT navigate. */}
-          <motion.button
-            type="button"
+          <IconBtn
+            variant="danger"
+            icon="trash"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(company.id) }}
             aria-label={`Remove ${company.name}`}
-            whileHover={{ scale: 1.3 }}
-            whileTap={{ scale: 0.8 }}
-            className="text-[var(--text-muted)] hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
-          >
-            <Icon name="trash" size="18" />
-          </motion.button>
+            className="flex-shrink-0"
+          />
         </div>
         {cardStyle === 'detailed' && (
           <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2 text-xs leading-tight masked-text" data-text={`${companyLinks.length} link${companyLinks.length !== 1 ? 's' : ''} · ${companyResume ? 'Resume uploaded' : 'No resume'}`}>
@@ -1027,9 +1065,9 @@ export function HomePage() {
           { id: 'compact', label: 'Compact', icon: 'list' },
           { id: 'detailed', label: 'Detailed', icon: 'columns' },
         ].map((s) => (
-          <motion.button key={s.id} onClick={() => setCardStyle(s.id)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${cardStyle === s.id ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}>
-            <Icon name={s.icon} size="14" /> {s.label}
-          </motion.button>
+          <Btn key={s.id} variant={cardStyle === s.id ? 'selected' : 'secondary'} icon={s.icon} iconSize="14" aria-pressed={cardStyle === s.id} onClick={() => setCardStyle(s.id)}>
+            {s.label}
+          </Btn>
         ))}
       </motion.div>
 
@@ -1044,64 +1082,55 @@ export function HomePage() {
           are reachable on a first visit; only the list-specific toggles are gated. */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-2 mb-5 flex-wrap">
         {stats.total > 0 && (
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCollapsed(!collapsed)} className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)] transition-all flex items-center gap-2">
-            <Icon name="chevronDown" size="16" /> {collapsed ? 'Show All Companies' : 'Collapse List'}
-          </motion.button>
+          <Btn icon="chevronDown" onClick={() => setCollapsed(!collapsed)}>
+            {collapsed ? 'Show all' : 'Collapse list'}
+          </Btn>
         )}
         {/* Sparkles opens a catalogue of every feature with the sample value that
             demonstrates it, and can load that data in one click. Always available,
             unlike the empty-state button, so the samples can be reviewed at any time.
             Example: click -> panel lists "Status column: Offer · Interviewing · ...". */}
-        <motion.button
-            type="button"
-            aria-pressed={showSamples}
-            aria-label="Show sample data for every feature"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowSamples((v) => !v)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showSamples ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}
-          >
-            <Icon name="sparkles" size="16" /> Sample data
-          </motion.button>
+        <Btn
+          variant={showSamples ? 'selected' : 'secondary'}
+          icon="sparkles"
+          aria-pressed={showSamples}
+          aria-label="Show sample data for every feature"
+          onClick={() => setShowSamples((v) => !v)}
+        >
+          Sample data
+        </Btn>
           {/* One form for a whole application -- company, role, its job links and any
             toggles -- so a new application does not have to be built section by
             section. Example: paste three postings and set Status in one submit. */}
-        <motion.button
-          type="button"
+        <Btn
+          variant={showBulk ? 'selected' : 'secondary'}
+          icon="clipboardCheck"
           aria-pressed={showBulk}
           aria-label="Add everything at once"
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
           onClick={() => setShowBulk((v) => !v)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showBulk ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}
         >
-          <Icon name="clipboardCheck" size="16" /> Bulk add
-        </motion.button>
+          Bulk add
+        </Btn>
         {/* Sun/moon swaps the whole app between light and dark. The choice is saved,
               so a reload keeps it; a first visit follows the OS preference.
               Example: in light mode this shows a moon and switches to dark. */}
-          <motion.button
-            type="button"
-            aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            aria-pressed={mode === 'dark'}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleMode}
-            className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)] transition-all flex items-center gap-2"
-          >
-            <Icon name={mode === 'dark' ? 'sun' : 'moon'} size="16" /> {mode === 'dark' ? 'Light mode' : 'Dark mode'}
-          </motion.button>
+          <Btn
+          icon={mode === 'dark' ? 'sun' : 'moon'}
+          aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-pressed={mode === 'dark'}
+          onClick={toggleMode}
+        >
+          {mode === 'dark' ? 'Light mode' : 'Dark mode'}
+        </Btn>
         {stats.total > 0 && (
-          <motion.button
-            type="button"
+          <Btn
+            variant={showTracker ? 'selected' : 'secondary'}
+            icon="list"
             aria-pressed={showTracker}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             onClick={() => setShowTracker(!showTracker)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showTracker ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}
           >
-            <Icon name="list" size="16" /> {showTracker ? 'Hide Job Links Tracker' : 'Show Job Links Tracker'}
-          </motion.button>
+            {showTracker ? 'Hide Job Links Tracker' : 'Show Job Links Tracker'}
+          </Btn>
         )}
       </motion.div>
 
@@ -1191,15 +1220,9 @@ export function HomePage() {
                 Example: 0 companies -> button shown; 4 companies filtered to 0 by the
                 query 'zzz' -> button hidden. */}
             {!query && companies.length === 0 && (
-              <motion.button
-                type="button"
-                onClick={loadSampleData}
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="mt-6 px-5 py-2.5 bg-[var(--surface-1)] border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all inline-flex items-center gap-2 magnetic-snap"
-              >
-                <Icon name="plusCircle" size="18" /> Load sample data
-              </motion.button>
+              <Btn variant="primary" icon="plusCircle" onClick={loadSampleData} className="mt-6">
+                Load sample data
+              </Btn>
             )}
           </motion.div>
         ) : (
@@ -1260,7 +1283,7 @@ function CompanyLinks({ role, addLink, editingLink, setEditingLink, editLabel, s
         <Controller name="url" control={linkControl} render={({ field, fieldState: { error } }) => (
           <TextField {...field} label="https://..." error={!!error} helperText={error?.message} size="small" className="flex-1" />
         )} />
-        <motion.button type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-5 py-2.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg font-medium hover:bg-[var(--accent-hover)] transition-all flex items-center justify-center gap-2 whitespace-nowrap"><Icon name="link" size="20" /> Add Link</motion.button>
+        <Btn variant="primary" type="submit" icon="link" iconSize="18">Add Link</Btn>
       </motion.form>
       {role.links.length > 0 && (
         <motion.ul className="space-y-3" style={{ listStyle: 'none', padding: 0, margin: 0 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
@@ -1270,15 +1293,15 @@ function CompanyLinks({ role, addLink, editingLink, setEditingLink, editLabel, s
                 <div className="flex gap-2 items-center card-magnetic">
                   <TextField size="small" placeholder="Label" value={editLabel} onChange={(e) => setEditLabel(e.target.value)} className="w-32" />
                   <TextField size="small" placeholder="URL" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="w-40" />
-                  <motion.button onClick={() => updateLink(link.id)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm flex items-center gap-1"><Icon name="check" size="18" /> Save</motion.button>
-                  <motion.button onClick={() => { setEditingLink(null); setEditLabel(''); setEditUrl('') }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="px-3 py-1.5 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm hover:bg-[var(--accent-soft)] transition-colors flex items-center gap-1"><Icon name="x" size="18" /> Cancel</motion.button>
+                  <Btn variant="primary" icon="check" iconSize="18" onClick={() => updateLink(link.id)} aria-label="Save link" />
+                  <Btn icon="x" iconSize="18" onClick={() => { setEditingLink(null); setEditLabel(''); setEditUrl('') }} aria-label="Cancel edit" />
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
                   <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[200px] text-[var(--text-primary)] no-underline hover:underline flex items-center gap-2 text-sm overflow-hidden text-ellipsis whitespace-nowrap" onDoubleClick={() => { setEditingLink(link.id); setEditLabel(link.label || ''); setEditUrl(link.url) }}>
                     <Icon name="externalLink" size="14" /> {link.label || link.url}
                   </a>
-                  <motion.button onClick={() => removeLink(link.id)} whileHover={{ scale: 1.3 }} whileTap={{ scale: 0.8 }} className="text-[var(--text-muted)] hover:text-red-500 transition-colors flex-shrink-0"><Icon name="trash" size="18" /></motion.button>
+                  <IconBtn variant="danger" icon="trash" iconSize="18" onClick={() => removeLink(link.id)} aria-label="Remove link" />
                 </div>
               )}
             </motion.li>
@@ -1297,8 +1320,8 @@ function CompanyResume({ role, setResume, handleDownload, handleFileChange, file
         <motion.div whileHover={{ scale: 1.02 }} className="flex items-center gap-3 p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--border)] card-magnetic card-shimmer">
           <Icon name="fileText" size="24" color="#ef4444" />
           <span className="flex-1 text-sm truncate masked-text" data-text={role.resume.name}><span>{role.resume.name}</span></span>
-          <motion.button onClick={handleDownload} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg text-sm hover:bg-[var(--surface-2)] transition-all flex items-center gap-1 flex-shrink-0"><Icon name="download" size="16" /> Download</motion.button>
-          <motion.button onClick={() => setResume(null)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-sm hover:bg-red-100 transition-all flex-shrink-0"><Icon name="x" size="16" /></motion.button>
+          <Btn icon="download" onClick={handleDownload}>Download</Btn>
+          <IconBtn variant="danger" icon="x" onClick={() => setResume(null)} aria-label="Remove resume" />
         </motion.div>
       ) : (
         /* The <input type="file"> used to sit INSIDE a <motion.button>. A button
@@ -1341,16 +1364,9 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
           <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2">Quick add</Typography>
           <div className="flex flex-wrap gap-2">
             {availablePresets.map((preset) => (
-              <motion.button
-                key={preset.name}
-                type="button"
-                onClick={() => addCustomFieldNamed(preset.name)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border)] rounded-full text-sm text-[var(--text-primary)] hover:bg-[var(--accent-soft)] hover:border-[var(--border-strong)] transition-all flex items-center gap-1.5 magnetic-snap"
-              >
-                <Icon name="plusCircle" size="14" /> {preset.name}
-              </motion.button>
+              <Btn key={preset.name} icon="plusCircle" iconSize="14" className="h-8 px-2.5 text-xs" onClick={() => addCustomFieldNamed(preset.name)}>
+                {preset.name}
+              </Btn>
             ))}
           </div>
         </motion.div>
@@ -1361,15 +1377,15 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
            opacity 0, leaving an invisible click target where the only entry point
            for adding a custom field should be. `animate` is what ends the initial
            state. Example: mounts at opacity 0, animates to opacity 1. */
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.02 }}>
-          <button onClick={() => setShowCustomInput(true)} className="w-full py-3 bg-[var(--surface-1)] border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center gap-2"><Icon name="plusCircle" size="18" /> Add your own toggle</button>
-        </motion.div>
+        <Btn icon="plusCircle" iconSize="18" onClick={() => setShowCustomInput(true)} className="w-full">
+          Add your own toggle
+        </Btn>
       )}
       {showCustomInput && (
         <motion.div className="flex gap-3 mb-3" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.01 }}>
           <TextField size="small" placeholder="Toggle name, e.g. Referral" value={customName} onChange={(e) => setCustomName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustomField()} fullWidth />
-          <motion.button onClick={addCustomField} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-all"><Icon name="check" size="16" /></motion.button>
-          <motion.button onClick={() => setShowCustomInput(false)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-4 py-2 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm hover:bg-[var(--accent-soft)] transition-all"><Icon name="x" size="16" /></motion.button>
+          <Btn variant="primary" icon="check" onClick={addCustomField} aria-label="Save field" />
+          <Btn icon="x" onClick={() => setShowCustomInput(false)} aria-label="Cancel field" />
         </motion.div>
       )}
     </AnimatePresence>
@@ -1484,14 +1500,9 @@ function RoleTableView({
             <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2">Add a field</Typography>
             <div className="flex flex-wrap gap-1.5">
               {availablePresets.map((t) => (
-                <button
-                  key={t.name}
-                  type="button"
-                  onClick={() => addCustomFieldNamed(t.name)}
-                  className="px-2.5 py-1 bg-[var(--surface-1)] border border-[var(--border)] dark:border-[var(--accent)]/40 rounded-full text-xs text-[var(--text-primary)] hover:bg-[var(--accent-soft)] transition-all"
-                >
-                  + {t.name}
-                </button>
+                <Btn key={t.name} icon="plusCircle" iconSize="14" className="h-8 px-2.5 text-xs" onClick={() => addCustomFieldNamed(t.name)}>
+                  {t.name}
+                </Btn>
               ))}
             </div>
           </div>
@@ -1510,9 +1521,7 @@ function RoleTableView({
             error={!!linkError} helperText={linkError || undefined}
             className="flex-[2] min-w-[160px]"
           />
-          <button type="submit" className="px-3 py-2 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm hover:bg-[var(--accent-hover)] transition-all whitespace-nowrap">
-            Add link
-          </button>
+          <Btn variant="primary" type="submit">Add link</Btn>
         </form>
         {role.links.length === 0 ? (
           <div className="px-4 py-3 text-sm text-[var(--text-muted)]">No links on this role yet.</div>
@@ -1521,9 +1530,7 @@ function RoleTableView({
             <a href={l.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 text-sm text-[var(--text-primary)] hover:underline truncate">
               {l.label || l.url}
             </a>
-            <button type="button" onClick={() => removeLink(l.id)} aria-label={`Remove link ${l.label || l.url}`} className="text-[var(--text-muted)] hover:text-red-500 transition-colors shrink-0">
-              <Icon name="trash" size="16" />
-            </button>
+            <IconBtn variant="danger" icon="trash" onClick={() => removeLink(l.id)} aria-label={`Remove link ${l.label || l.url}`} className="shrink-0" />
           </div>
         ))}
       </TableCard>
@@ -1537,8 +1544,8 @@ function RoleTableView({
             <div className="flex items-center gap-2">
               <Icon name="fileText" size="16" color="#ef4444" />
               <span className="flex-1 min-w-0 text-sm truncate">{role.resume.name}</span>
-              <button type="button" onClick={handleDownload} className="px-2 py-1 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" aria-label="Download resume"><Icon name="download" size="16" /></button>
-              <button type="button" onClick={() => setResume(null)} className="px-2 py-1 text-sm text-[var(--text-muted)] hover:text-red-500 transition-colors" aria-label="Remove resume"><Icon name="x" size="16" /></button>
+              <IconBtn icon="download" onClick={handleDownload} aria-label="Download resume" />
+              <IconBtn variant="danger" icon="x" onClick={() => setResume(null)} aria-label="Remove resume" />
             </div>
           ) : (
             <label htmlFor="resume-upload-table" className="flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all cursor-pointer">
@@ -1626,7 +1633,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
   return (
     <div className="flex items-center gap-2" data-testid="view-strip">
       <Typography variant="caption" className="text-[var(--text-secondary)]">View</Typography>
-      <div className="inline-flex rounded-lg border border-[var(--border)] overflow-hidden">
+      <div className={SEG_WRAP}>
         {ROLE_VIEWS.map((v) => {
           const on = !comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === v.id
           return (
@@ -1635,7 +1642,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
               type="button"
               aria-pressed={on}
               onClick={() => { setComparing(false); setRoleView(v.id) }}
-              className={`px-3 py-1.5 text-sm font-medium transition-all border-r border-[var(--border)] last:border-r-0 ${on ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)]'}`}
+              className={`${SEG_BASE} ${on ? SEG_ON : SEG_OFF}`}
             >
               {v.label}
             </button>
@@ -1646,7 +1653,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
             type="button"
             aria-pressed={comparing}
             onClick={() => setComparing((c) => !c)}
-            className={`px-3 py-1.5 text-sm font-medium transition-all border-l border-[var(--border)] ${comparing ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)]'}`}
+            className={`${SEG_BASE} border-l border-r-0 ${comparing ? SEG_ON : SEG_OFF}`}
           >
             All roles
           </button>
@@ -1660,7 +1667,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
 // Example: <RolesLayoutToggle layout="rail" setLayout={fn} />
 function RolesLayoutToggle({ layout, setLayout }) {
   return (
-    <div className="inline-flex rounded-lg border border-[var(--border)] overflow-hidden" data-testid="roles-layout-toggle">
+    <div className={SEG_WRAP} data-testid="roles-layout-toggle">
       {ROLES_LAYOUTS.map((l) => (
         <button
           key={l.id}
@@ -1668,7 +1675,7 @@ function RolesLayoutToggle({ layout, setLayout }) {
           aria-pressed={layout === l.id}
           aria-label={`Roles as ${l.label.toLowerCase()}`}
           onClick={() => setLayout(l.id)}
-          className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition-all border-r border-[var(--border)] last:border-r-0 ${layout === l.id ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)]'}`}
+          className={`${SEG_BASE} ${layout === l.id ? SEG_ON : SEG_OFF}`}
         >
           <Icon name={l.icon} size="14" /> {l.label}
         </button>
@@ -1714,14 +1721,7 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
                 </span>
               </button>
               {roles.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeRole(r.id)}
-                  aria-label={`Remove role ${r.title}`}
-                  className="px-2 text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
-                >
-                  <Icon name="x" size="14" />
-                </button>
+                <IconBtn variant="danger" icon="x" iconSize="14" onClick={() => removeRole(r.id)} aria-label={`Remove role ${r.title}`} className="opacity-0 group-hover:opacity-100 focus:opacity-100 w-8" />
               )}
             </div>
           )
@@ -1729,14 +1729,9 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
       </div>
 
       {!showRoleInput ? (
-        <button
-          type="button"
-          onClick={() => setShowRoleInput(true)}
-          aria-label="Add role"
-          className="mt-2 w-full px-2 py-2 rounded-lg text-sm font-medium border border-dashed border-[var(--border-strong)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center gap-1.5"
-        >
-          <Icon name="plusCircle" size="16" /> Add role
-        </button>
+        <Btn icon="plusCircle" onClick={() => setShowRoleInput(true)} aria-label="Add role" className="mt-2 w-full">
+          Add role
+        </Btn>
       ) : (
         <div className="mt-2 space-y-2">
           <TextField
@@ -1747,8 +1742,8 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRole(newRoleTitle) } }}
           />
           <div className="flex gap-2">
-            <button type="button" onClick={() => addRole(newRoleTitle)} aria-label="Save role" className="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-all"><Icon name="check" size="16" /></button>
-            <button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} aria-label="Cancel role" className="flex-1 px-3 py-2 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm transition-all"><Icon name="x" size="16" /></button>
+            <Btn variant="primary" icon="check" onClick={() => addRole(newRoleTitle)} aria-label="Save role" className="flex-1" />
+            <Btn icon="x" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} aria-label="Cancel role" className="flex-1" />
           </div>
         </div>
       )}
@@ -2040,16 +2035,9 @@ export function CompanyPage() {
           </TextField>
 
           {!showRoleInput ? (
-            <motion.button
-              type="button"
-              onClick={() => setShowRoleInput(true)}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              aria-label="Add role"
-              className="px-3 py-2 rounded-lg text-sm font-medium border border-dashed border-[var(--border-strong)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)] transition-all flex items-center gap-1.5"
-            >
-              <Icon name="plusCircle" size="16" /> Add role
-            </motion.button>
+            <Btn icon="plusCircle" onClick={() => setShowRoleInput(true)} aria-label="Add role">
+              Add role
+            </Btn>
           ) : (
             <div className="flex items-center gap-2">
               <TextField
@@ -2060,22 +2048,13 @@ export function CompanyPage() {
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRole(newRoleTitle) } }}
                 autoFocus
               />
-              <motion.button type="button" onClick={() => addRole(newRoleTitle)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-all" aria-label="Save role"><Icon name="check" size="16" /></motion.button>
-              <motion.button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-2 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm transition-all" aria-label="Cancel role"><Icon name="x" size="16" /></motion.button>
+              <Btn variant="primary" icon="check" onClick={() => addRole(newRoleTitle)} aria-label="Save role" />
+              <Btn icon="x" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} aria-label="Cancel role" />
             </div>
           )}
 
           {roles.length > 1 && activeRole && (
-            <motion.button
-              type="button"
-              onClick={() => removeRole(activeRole.id)}
-              aria-label={`Remove role ${activeRole.title}`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-3 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:text-red-500 transition-colors flex items-center gap-1.5"
-            >
-              <Icon name="trash" size="16" />
-            </motion.button>
+            <IconBtn variant="danger" icon="trash" onClick={() => removeRole(activeRole.id)} aria-label={`Remove role ${activeRole.title}`} />
           )}
 
           <div className="ml-auto flex items-center gap-3">
@@ -2112,7 +2091,7 @@ export function CompanyPage() {
       {!comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === 'compact' && (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-1.5 border-b-2 border-[var(--border)] mb-6 overflow-x-auto pb-0 tab-nav">
         {subTabs.map((key) => (
-          <button key={key} data-subtab={key} onClick={() => setActiveSubTab(key)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${activeSubTab === key ? 'active border-[var(--accent)] text-[var(--text-primary)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
+          <button key={key} data-subtab={key} onClick={() => setActiveSubTab(key)} className={`inline-flex items-center gap-2 h-10 px-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${activeSubTab === key ? 'active border-[var(--accent)] text-[var(--accent)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
             <Icon name={key === 'links' ? 'link' : key === 'resume' ? 'fileText' : 'tag'} size="16" /> {getSubTabLabel(key)}
             {key === 'links' && roleLinkCount(activeRole) > 0 && <span className="ml-1.5 text-[var(--text-muted)]">{roleLinkCount(activeRole)}</span>}
             {key === 'custom' && customNames.length > 0 && <span className="ml-1.5 text-[var(--text-muted)]">{customNames.length}</span>}

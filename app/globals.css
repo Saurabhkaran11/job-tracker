@@ -8,10 +8,9 @@
 /* ============================================================
    Design tokens.
 
-   One accent, and it is graphite rather than a hue: structure and emphasis carry in
-   near-black, which leaves actual colour free to mean something (green for an offer,
-   red for a rejection, amber for a take-home). In dark mode the accent inverts to
-   near-white, which is why it is a token rather than a fixed colour.
+   One accent, a blue, used only for the primary action and the current selection.
+   Status colours stay free to mean something (green for an offer, red for a rejection,
+   amber for a take-home), because the accent never competes with them.
 
    Every control in the app -- MUI's and the hand-written ones -- resolves its height,
    radius and border from here, so the two families read as one.
@@ -26,9 +25,16 @@
   --text-muted: #a1a1aa;
   --border: #e4e4e7;
   --border-strong: #d4d4d8;
-  --accent: #18181b;
-  --accent-hover: #3f3f46;
-  --accent-soft: #f4f4f5;
+  /* The accent is a blue, not graphite. Graphite made every filled control read as a
+     black block, which is heavy on a light page; a blue of this weight carries the
+     same emphasis while staying part of the light palette, and it sits beside the
+     dashboard's sky wash rather than fighting it.
+     `accent-soft` is the tint used for a selected toggle -- selection reads as a light
+     wash with coloured text, not a solid slab. */
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-soft: #eff4ff;
+  --accent-border: #bfd4fe;
   --on-accent: #ffffff;
 
   --control-h: 36px;
@@ -37,8 +43,8 @@
 
   /* Page washes. Each screen gets its own soft tint so the app is not white-on-white,
      and so you can tell at a glance which page you are on. They are deliberately very
-     pale -- cards stay white and sit on top of them -- and the accent stays graphite,
-     so nothing here competes with a status chip for meaning.
+     pale -- cards stay white and sit on top of them -- so nothing here competes with a
+     status chip for meaning.
      Example: the dashboard sits on a cool sky wash, a company page on a soft sage. */
   --page-dashboard: #eff5fb;
   --page-dashboard-glow: rgba(56, 132, 221, 0.10);
@@ -55,10 +61,11 @@
   --text-muted: #71717a;
   --border: #27272a;
   --border-strong: #3f3f46;
-  --accent: #fafafa;
-  --accent-hover: #e4e4e7;
-  --accent-soft: #232327;
-  --on-accent: #18181b;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-soft: #16233c;
+  --accent-border: #2b4470;
+  --on-accent: #0b1220;
 
   /* Dark mode keeps the same two hues rather than going flat black -- a tinted
      charcoal, so the pages stay distinguishable and the surface does not read as a

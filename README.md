@@ -102,7 +102,9 @@
 
 ## Completed — UI system
 
-- One accent, and it is **graphite** rather than a hue — near-black in light, near-white in dark. Colour is left free to mean something.
+- One accent, a **blue**, used only for the primary action and the current selection.
+- It is deliberately not graphite: near-black made every filled control read as a black slab, which is heavy on a light page.
+- A selected toggle is a light accent wash with coloured text, not a solid fill — so selection reads without shouting.
 - Each page carries its own soft wash so the app is not white-on-white, and so the screen you are on is recognisable at a glance.
 - The dashboard sits on a cool sky tint, a company page on a soft sage tint.
 - Both are a flat colour plus two very faint radial glows — no gradient banding, no noise.
@@ -304,6 +306,14 @@
 - Turbopack's root is pinned in `next.config.mjs`, because a `package-lock.json` above the repo would otherwise be taken as the workspace root.
 - The test harness no longer renders a router. `next/navigation` and `next/link` are mocked against one mutable route, and `mount()` picks the page component the way the `app/` folder would.
 - Nothing about the appearance changed — the styling layer ported across untouched. The redesign is a separate piece of work.
+
+### One button, everywhere
+
+- The app had roughly a dozen button shapes — three radii, two heights, pills beside rectangles, some bordered and some not — because each was styled where it was written.
+- Every button now goes through `Btn` or `IconBtn`, with five variants: `primary`, `secondary`, `selected`, `ghost`, `danger`.
+- The two segmented groups (view switcher, roles-layout toggle) share one spec with the same height and type scale, so they cannot drift from the buttons beside them.
+- Measured in the running app: all visible buttons are 36px tall with an 8px radius.
+- The compact dashboard card used to be a name over a bare count chip, leaving the row mostly empty. It now carries what you would actually scan for — each role's stage, the link count, and whether a CV is attached.
 
 ### Finishing the token migration
 

@@ -1466,7 +1466,7 @@ describe('the table view', () => {
     seedRole()
     await mount('/company/c1')
     await openTable(user)
-    await user.click(within(table()).getByRole('button', { name: '+ Salary' }))
+    await user.click(within(table()).getByRole('button', { name: 'Salary' }))
     await waitFor(() => expect(fieldsOf(stored()[0])).toHaveProperty('Salary'))
   })
 
@@ -1645,7 +1645,8 @@ describe('links and resume are per role', () => {
       ],
     }])
     await mount('/')
-    expect(await screen.findByText(/3 links/i)).toBeInTheDocument()
+    // the count now appears in both the tracker table and the company card
+    expect((await screen.findAllByText(/3 links/i)).length).toBeGreaterThan(0)
   })
 })
 
