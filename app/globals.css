@@ -38,8 +38,11 @@
   --on-accent: #ffffff;
 
   --control-h: 36px;
-  --radius: 8px;
-  --radius-lg: 12px;
+  /* Named --ui-radius, not --radius: Tailwind v4 treats `--radius-*` as its own theme
+     namespace, so a token called --radius-lg silently redefines every `rounded-lg`
+     in the app. That is what made buttons 12px while cards and inputs stayed 8px. */
+  --ui-radius: 8px;
+  --ui-radius-lg: 12px;
 
   /* Page washes. Each screen gets its own soft tint so the app is not white-on-white,
      and so you can tell at a glance which page you are on. They are deliberately very

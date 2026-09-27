@@ -47,7 +47,8 @@
 - Card-style switcher offering two looks — **Compact** and **Detailed**.
 - `Compact` — dense list row, numbered badge, link count and a resume chip.
 - `Detailed` — roomy card with accent border, link preview chips, corner accent dots and a resume block.
-- A **Hide / Show Job Links Tracker** toggle for the dashboard table, independent of Collapse List.
+- A **Hide / Show tracker** toggle for the dashboard table, independent of Collapse list.
+- A **Tracker only** toggle that puts the table on its own — off by default, and it switches the table on so the mode can never leave an empty screen.
 - A **Dark mode** toggle (sun/moon) switching the whole app between light and dark.
 - A **Sample data** icon opening a panel that lists every feature with the sample value demonstrating it, and loads that data in one click.
 - A **Bulk add** toggle opening one form that creates a whole application in a single submit — company, role title, several job links and any of the preset toggles.
@@ -307,6 +308,17 @@
 - The test harness no longer renders a router. `next/navigation` and `next/link` are mocked against one mutable route, and `mount()` picks the page component the way the `app/` folder would.
 - Nothing about the appearance changed — the styling layer ported across untouched. The redesign is a separate piece of work.
 
+### Motion
+
+- Everything the design pass switched off has been removed rather than left stubbed: the shimmer sweep, the flowing border ring, their orphaned `@keyframes`, the `@property --flow-angle`, and the corner dots.
+- `card-perspective`, `card-magnetic` and `magnetic-snap` were three class names doing the same thing — a border colour on hover — each still declaring transitions for a transform and a shadow that no longer moved. They are one `.card-hover`.
+- What remains was verified running in the browser, not assumed: the tab indicator animation fires on a tab change, panels swap, the sample and bulk panels open and close, and cards and buttons carry real transitions.
+
+### A radius token that hijacked Tailwind
+
+- Buttons measured 12px while cards and inputs measured 8px. The cause was the token names: Tailwind v4 treats `--radius-*` as its own theme namespace, so declaring `--radius-lg: 12px` silently redefined every `rounded-lg` in the app.
+- Renamed to `--ui-radius` / `--ui-radius-lg`. Measured after: every button, card and input is 8px, and every button is 36px tall.
+
 ### One button, everywhere
 
 - The app had roughly a dozen button shapes — three radii, two heights, pills beside rectangles, some bordered and some not — because each was styled where it was written.
@@ -353,7 +365,7 @@ Three problems, fixed together.
 
 ## Testing
 
-- One consolidated suite in `src/App.test.jsx` — **157 tests, all passing**.
+- One consolidated suite in `src/App.test.jsx` — **162 tests, all passing**.
 - Runner is Vitest with jsdom and Testing Library; config lives in `vitest.config.js`, setup in `src/setupTests.js`.
 - Everything is driven through the rendered UI, so a passing test means a user could actually do that thing.
 - Assertions mostly read `localStorage` back, since that is the app's source of truth.

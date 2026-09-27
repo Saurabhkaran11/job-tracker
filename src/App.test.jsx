@@ -200,7 +200,7 @@ describe('dashboard — searching', () => {
     await user.type(searchBox(), 'Strip')
     // The Job Links Tracker table always lists every company; it is the card grid
     // below it that the query filters, so scope the assertion there.
-    const grid = () => document.querySelector('.card-grid-perspective')
+    const grid = () => screen.getByTestId('company-grid')
     await waitFor(() => {
       expect(grid()).toBeTruthy()
       expect(grid().textContent).toContain('Stripe')
@@ -326,8 +326,9 @@ describe('dashboard — sample data and the Status / Priority columns', () => {
 
 // ---------------------------------------------------------------------------
 describe('dashboard — Job Links Tracker toggle and card styles', () => {
+  const twoRoles = () => ([company({ id: 'c1', name: 'Anthropic' })])
   const trackerToggle = () =>
-    screen.getByRole('button', { name: /(hide|show) job links tracker/i })
+    screen.getByRole('button', { name: /^(hide|show) tracker$/i })
   const trackerTable = () =>
     [...document.querySelectorAll('div')].find((d) => d.textContent.trim().startsWith('Job Links Tracker'))
 
@@ -361,8 +362,60 @@ describe('dashboard — Job Links Tracker toggle and card styles', () => {
     await mount('/')
     await user.click(trackerToggle())
     await waitFor(() => expect(screen.queryByText('Job Links Tracker')).toBeNull())
-    expect(document.querySelector('.card-grid-perspective').textContent).toContain('Anthropic')
+    expect(screen.getByTestId('company-grid').textContent).toContain('Anthropic')
     expect(trackerTable()).toBeFalsy()
+  })
+
+  it('does not start in tracker-only mode', async () => {
+    seed(twoRoles())
+    await mount('/')
+    await screen.findAllByText('Anthropic')
+    expect(screen.getByRole('button', { name: /show only the job links tracker/i })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByTestId('company-grid')).toBeTruthy()
+  })
+
+  it('shows only the tracker when switched on', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/')
+    await screen.findAllByText('Anthropic')
+    await user.click(screen.getByRole('button', { name: /show only the job links tracker/i }))
+    await waitFor(() => expect(screen.queryByTestId('company-grid')).toBeNull())
+    expect(screen.getByText('Job Links Tracker')).toBeInTheDocument()
+  })
+
+  it('leaves the controls reachable in tracker-only mode', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/')
+    await screen.findAllByText('Anthropic')
+    await user.click(screen.getByRole('button', { name: /show only the job links tracker/i }))
+    await waitFor(() => expect(screen.queryByTestId('company-grid')).toBeNull())
+    expect(screen.getByRole('button', { name: /show only the job links tracker/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument()
+  })
+
+  it('brings the rest of the dashboard back when switched off', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/')
+    await screen.findAllByText('Anthropic')
+    const btn = () => screen.getByRole('button', { name: /show only the job links tracker/i })
+    await user.click(btn())
+    await waitFor(() => expect(screen.queryByTestId('company-grid')).toBeNull())
+    await user.click(btn())
+    await waitFor(() => expect(screen.getByTestId('company-grid')).toBeTruthy())
+  })
+
+  it('turns the table on if it was hidden', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/')
+    await screen.findAllByText('Anthropic')
+    await user.click(trackerToggle())
+    await waitFor(() => expect(screen.queryByText('Job Links Tracker')).toBeNull())
+    await user.click(screen.getByRole('button', { name: /show only the job links tracker/i }))
+    expect(await screen.findByText('Job Links Tracker')).toBeInTheDocument()
   })
 
   it('offers exactly two card styles', async () => {
@@ -392,9 +445,8 @@ describe('dashboard — Job Links Tracker toggle and card styles', () => {
     await screen.findAllByText('Anthropic')
     await user.click(screen.getByRole('button', { name: /detailed/i }))
     await waitFor(() => expect(document.querySelector('.card-featured')).toBeTruthy())
-    // the merged style keeps featured's corner dots, its resume block and the
-    // link preview chips that both old styles rendered
-    expect(document.querySelectorAll('.magnetic-dot').length).toBe(3)
+    // the detailed style keeps the link preview chips and the resume block; the
+    // corner dots went with the rest of the decorative motion
     expect(document.body.textContent).toContain('Careers')
     expect(document.body.textContent).toContain('cv.pdf')
   })
@@ -403,7 +455,7 @@ describe('dashboard — Job Links Tracker toggle and card styles', () => {
     seed([company({ name: 'Anthropic', resume: { name: 'cv.pdf' } })])
     await mount('/')
     await screen.findAllByText('Anthropic')
-    expect(document.querySelector('.card-grid-perspective').textContent).toContain('cv.pdf')
+    expect(screen.getByTestId('company-grid').textContent).toContain('cv.pdf')
   })
 })
 

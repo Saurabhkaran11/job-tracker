@@ -11,8 +11,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ThemeProvider, createTheme, CssBaseline, Typography, Chip, TextField, MenuItem, Alert, InputAdornment, Button, Divider } from '@mui/material'
-import { Add as AddIconMUI } from '@mui/icons-material'
+import { ThemeProvider, createTheme, CssBaseline, Typography, Chip, TextField, MenuItem, Alert, InputAdornment, Divider } from '@mui/material'
 import { IconSun, IconMoon, IconSparkles, IconBriefcase, IconLink, IconFileText, IconArrowLeft, IconSearch, IconPlus, IconCheck, IconX, IconTrash, IconUpload, IconDownload, IconAlertCircle, IconStar, IconColumns, IconLayoutList, IconBuilding, IconClipboardCheck, IconTag, IconExternalLink, IconCirclePlus, IconChevronDown } from '@tabler/icons-react'
 
 const STORAGE_KEY = 'job-tracker-data'
@@ -620,7 +619,7 @@ const buildTheme = (mode) => createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 'var(--radius)',
+          borderRadius: 'var(--ui-radius)',
           backgroundColor: 'var(--surface-1)',
           fontSize: 14,
           '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--border)' },
@@ -633,7 +632,7 @@ const buildTheme = (mode) => createTheme({
     MuiInputBase: { styleOverrides: { root: { color: 'var(--text-primary)' } } },
     MuiButton: {
       styleOverrides: {
-        root: { borderRadius: 'var(--radius)', minHeight: 'var(--control-h)', boxShadow: 'none' },
+        root: { borderRadius: 'var(--ui-radius)', minHeight: 'var(--control-h)', boxShadow: 'none' },
         contained: { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', '&:hover': { backgroundColor: 'var(--accent-hover)', boxShadow: 'none' } },
       },
     },
@@ -644,7 +643,7 @@ const buildTheme = (mode) => createTheme({
     },
     MuiFormHelperText: { styleOverrides: { root: { marginLeft: 2 } } },
     MuiMenuItem: { styleOverrides: { root: { fontSize: 14 } } },
-    MuiAlert: { styleOverrides: { root: { borderRadius: 'var(--radius)' } } },
+    MuiAlert: { styleOverrides: { root: { borderRadius: 'var(--ui-radius)' } } },
   },
 })
 
@@ -809,8 +808,8 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
   //                                    corner dots, resume block)
   // Example: styleClasses['compact'] is applied for the dense list view.
   const styleClasses = {
-    compact: 'card card-compact card-perspective card-magnetic magnetic-snap card-shimmer',
-    detailed: 'card card-featured card-perspective card-flowing card-shimmer',
+    compact: 'card card-compact card-hover',
+    detailed: 'card card-featured card-hover',
   }
 
   const cardVariants = {
@@ -822,13 +821,6 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
   return (
     <Link href={`/company/${company.id}`} className="card-link block">
       <motion.div layout variants={cardVariants} initial="hidden" animate="visible" whileHover="hover" transition={{ duration: 0.3 }} className={`w-full ${styleClasses[cardStyle] || styleClasses.compact}`}>
-        {cardStyle === 'detailed' && (
-          <>
-            <div className="magnetic-dot magnetic-dot-1" />
-            <div className="magnetic-dot magnetic-dot-2" />
-            <div className="magnetic-dot magnetic-dot-3" />
-          </>
-        )}
         <div className="flex items-center gap-3">
           <div className="flex-shrink-0">
             {cardStyle === 'compact' ? (
@@ -888,9 +880,9 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
         {cardStyle === 'detailed' && previewLinks.length > 0 && (
           <div className="flex flex-wrap gap-2 my-2">
             {previewLinks.map((l) => (
-              <Chip key={l.id} size="small" icon={<Icon name="link" size="12" />} label={l.label || l.url} variant="outlined" className="magnetic-snap" />
+              <Chip key={l.id} size="small" icon={<Icon name="link" size="12" />} label={l.label || l.url} variant="outlined" />
             ))}
-            {companyLinks.length > 2 && <Chip size="small" label={`+${companyLinks.length - 2} more`} variant="outlined" className="magnetic-snap" />}
+            {companyLinks.length > 2 && <Chip size="small" label={`+${companyLinks.length - 2} more`} variant="outlined" />}
           </div>
         )}
         {cardStyle === 'detailed' && companyResume && (
@@ -1015,6 +1007,9 @@ export function HomePage() {
   const [showTracker, setShowTracker] = useState(true)
   const [showSamples, setShowSamples] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
+  // Focus mode: the tracker table and nothing else. Off on arrival -- it is a way to
+  // concentrate on the table, not the shape the dashboard should open in.
+  const [trackerOnly, setTrackerOnly] = useState(false)
   const { mode, toggleMode } = useThemeMode()
 
   return (
@@ -1029,7 +1024,7 @@ export function HomePage() {
         </div>
       </motion.div>
 
-      <motion.form onSubmit={onSubmit} className="mb-6" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+      <motion.form onSubmit={onSubmit} className="mb-6 flex items-center gap-2" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         {/* MUI v9 removed the top-level `InputProps` prop. It fell through to the DOM
             as inputprops="[object Object]" and BOTH adornments -- the search icon and
             the Add button -- were silently dropped, which is why there was no button
@@ -1044,19 +1039,24 @@ export function HomePage() {
           placeholder="Add or search companies..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          /* Implicit form submission on Enter is unreliable here, because the only
-             submit button lives inside an InputAdornment rather than as a direct
-             child of the form. Handling the key explicitly guarantees that typing a
-             name and pressing Enter adds it, exactly like clicking Add.
+          /* Kept even though Add is now a direct child of the form and implicit
+             submission would work: MUI's TextField can swallow the key in some
+             configurations, and this makes Enter's behaviour explicit and testable.
              Example: type 'Linear', press Enter -> onSubmit runs -> company added. */
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSubmit(e) } }}
           slotProps={{
             input: {
               startAdornment: <InputAdornment position="start"><IconSearch /></InputAdornment>,
-              endAdornment: <InputAdornment position="end"><Button type="submit" variant="contained" color="primary" startIcon={<AddIconMUI />}>Add</Button></InputAdornment>,
             },
           }}
+          className="flex-1 min-w-0"
         />
+        {/* Add sits beside the field, not inside its endAdornment. An adornment is
+            laid out by MUI inside the input's own box, so the button inherited the
+            input's padding rather than the button spec -- it came out a pixel taller
+            than every other button and crowded the field's rounded edge. As a sibling
+            it is the same Btn as the rest of the app. */}
+        <Btn variant="primary" type="submit" icon="add">Add</Btn>
       </motion.form>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex flex-wrap items-center justify-center gap-2 mb-8">
@@ -1129,12 +1129,25 @@ export function HomePage() {
             aria-pressed={showTracker}
             onClick={() => setShowTracker(!showTracker)}
           >
-            {showTracker ? 'Hide Job Links Tracker' : 'Show Job Links Tracker'}
+            {showTracker ? 'Hide tracker' : 'Show tracker'}
+          </Btn>
+        )}
+        {/* Turning it on also turns the table on, so the mode can never leave an
+            empty screen. */}
+        {stats.total > 0 && (
+          <Btn
+            variant={trackerOnly ? 'selected' : 'secondary'}
+            icon="columns"
+            aria-pressed={trackerOnly}
+            aria-label="Show only the Job Links Tracker"
+            onClick={() => { const next = !trackerOnly; setTrackerOnly(next); if (next) setShowTracker(true) }}
+          >
+            Tracker only
           </Btn>
         )}
       </motion.div>
 
-      {!collapsed && stats.total > 0 && (
+      {!trackerOnly && !collapsed && stats.total > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-4 mb-5 flex-wrap items-baseline">
           {[
             { label: 'Companies', value: stats.total },
@@ -1149,11 +1162,11 @@ export function HomePage() {
         </motion.div>
       )}
 
-      {showBulk && (
+      {!trackerOnly && showBulk && (
         <BulkAddPanel companies={companies} onSubmit={bulkAdd} onClose={() => setShowBulk(false)} />
       )}
 
-      {showSamples && (
+      {!trackerOnly && showSamples && (
         <SampleDataPanel
           onLoad={() => { loadSampleData(); setShowSamples(false) }}
           onClose={() => setShowSamples(false)}
@@ -1176,7 +1189,7 @@ export function HomePage() {
               <div className="col-span-2">Note</div>
             </div>
             {companies.map((c, i) => (
-              <motion.div key={c.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center border-b border-[var(--border)] hover:bg-[var(--accent-soft)]/30 transition-colors card-magnetic" whileHover={{ scale: 1.01 }}>
+              <motion.div key={c.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center border-b border-[var(--border)] hover:bg-[var(--accent-soft)]/30 transition-colors" whileHover={{ scale: 1.01 }}>
                 <div className="col-span-1"><span className="inline-flex items-center justify-center w-6 h-6 border border-[var(--border-strong)] rounded text-[var(--text-secondary)] text-xs font-bold">{i + 1}</span></div>
                 <div className="col-span-3 truncate">
                   <span className="font-medium text-[var(--text-primary)] text-sm">{c.name}</span>
@@ -1207,7 +1220,7 @@ export function HomePage() {
         </motion.div>
       )}
 
-      {!collapsed && (
+      {!trackerOnly && !collapsed && (
       <AnimatePresence mode="popLayout">
         {filtered.length === 0 ? (
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
@@ -1226,7 +1239,7 @@ export function HomePage() {
             )}
           </motion.div>
         ) : (
-          <motion.div key="grid" className="grid grid-cols-1 gap-3 card-grid-perspective">
+          <motion.div key="grid" data-testid="company-grid" className="grid grid-cols-1 gap-3">
             {filtered.map((c, i) => (
               <CompanyCard key={c.id} company={c} onRemove={removeCompany} onEdit={editCompany} cardStyle={cardStyle} index={i} />
             ))}
@@ -1235,7 +1248,7 @@ export function HomePage() {
       </AnimatePresence>
       )}
 
-      {companies.length > 0 && (
+      {!trackerOnly && companies.length > 0 && (
           <motion.footer initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8">
             <Divider />
             <div className="text-center py-4">
@@ -1244,8 +1257,8 @@ export function HomePage() {
           </motion.footer>
         )}
 
-        {companies.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] p-4 card-magnetic">
+        {!trackerOnly && companies.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 bg-[var(--accent-soft)] rounded-lg flex items-center justify-center"><Icon name="fileText" size="18" /></div>
               <div>
@@ -1275,8 +1288,8 @@ function CompanyLinks({ role, addLink, editingLink, setEditingLink, editLabel, s
   }
 
   return (
-    <div className="card-grid-perspective">
-      <motion.form onSubmit={handleLinkSubmit(onAddLink)} className="flex flex-row gap-2 items-center mb-6 card-magnetic" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.01 }}>
+    <div className="">
+      <motion.form onSubmit={handleLinkSubmit(onAddLink)} className="flex flex-row gap-2 items-center mb-6" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.01 }}>
         <Controller name="label" control={linkControl} render={({ field }) => (
           <TextField {...field} label="Job title" size="small" className="flex-1" />
         )} />
@@ -1288,9 +1301,9 @@ function CompanyLinks({ role, addLink, editingLink, setEditingLink, editLabel, s
       {role.links.length > 0 && (
         <motion.ul className="space-y-3" style={{ listStyle: 'none', padding: 0, margin: 0 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           {role.links.map((link) => (
-            <motion.li key={link.id} className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] p-4 card-magnetic card-shimmer" layout whileHover={{ scale: 1.02, boxShadow: '0 8px 24px rgba(147, 51, 234, 0.1)' }}>
+            <motion.li key={link.id} className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] p-4" layout whileHover={{ scale: 1.005 }}>
               {editingLink === link.id ? (
-                <div className="flex gap-2 items-center card-magnetic">
+                <div className="flex gap-2 items-center">
                   <TextField size="small" placeholder="Label" value={editLabel} onChange={(e) => setEditLabel(e.target.value)} className="w-32" />
                   <TextField size="small" placeholder="URL" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="w-40" />
                   <Btn variant="primary" icon="check" iconSize="18" onClick={() => updateLink(link.id)} aria-label="Save link" />
@@ -1317,7 +1330,7 @@ function CompanyResume({ role, setResume, handleDownload, handleFileChange, file
     <div>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {role.resume ? (
-        <motion.div whileHover={{ scale: 1.02 }} className="flex items-center gap-3 p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--border)] card-magnetic card-shimmer">
+        <motion.div whileHover={{ scale: 1.02 }} className="flex items-center gap-3 p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--border)]">
           <Icon name="fileText" size="24" color="#ef4444" />
           <span className="flex-1 text-sm truncate masked-text" data-text={role.resume.name}><span>{role.resume.name}</span></span>
           <Btn icon="download" onClick={handleDownload}>Download</Btn>
@@ -1354,7 +1367,7 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
     <div>
       <AnimatePresence>
       {customNames.map((cn) => (
-          <motion.div key={cn} className="flex items-center gap-3 mb-3 card-magnetic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ scale: 1.01 }}>
+          <motion.div key={cn} className="flex items-center gap-3 mb-3" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ scale: 1.01 }}>
             <span className="text-sm font-semibold text-[var(--text-primary)] min-w-[140px] truncate masked-text" data-text={cn}><span>{cn}</span>:</span>
             <CustomFieldInput name={cn} value={customFields[cn]} onChange={(v) => updateCustomField(cn, v)} />
           </motion.div>
