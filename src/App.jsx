@@ -180,7 +180,7 @@ const NEUTRAL_CHIP = 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-
 function RoleChips({ company, field, styles }) {
   const roles = normaliseRoles(company)
   const values = roles.map((r) => ({ title: r.title, value: r.customFields?.[field] }))
-  if (values.every((v) => !v.value)) return <span className="text-xs text-gray-300 dark:text-gray-600">&mdash;</span>
+  if (values.every((v) => !v.value)) return <span className="text-xs text-[var(--text-muted)]">&mdash;</span>
   return (
     <div className="flex flex-wrap gap-1">
       {values.filter((v) => v.value).map((v) => (
@@ -378,7 +378,7 @@ const BulkToggleGrid = React.memo(function BulkToggleGrid({ fields, setField }) 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {PRESET_TOGGLES.map((t) => (
         <div key={t.name} className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-300 min-w-[110px] shrink-0">{t.name}</span>
+          <span className="text-sm text-[var(--text-secondary)] min-w-[110px] shrink-0">{t.name}</span>
           <CustomFieldInput name={t.name} value={fields[t.name]} onChange={(v) => setField(t.name, v)} />
         </div>
       ))}
@@ -417,17 +417,17 @@ function BulkAddPanel({ companies, onSubmit, onClose }) {
       onSubmit={submit}
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
+      className="mb-8 bg-[var(--surface-1)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden"
     >
-      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
         <Icon name="clipboardCheck" size="18" />
-        <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 flex-1">
+        <Typography variant="subtitle2" className="font-semibold text-[var(--text-primary)] flex-1">
           Add everything at once
         </Typography>
         <button type="submit" className="px-3 py-1.5 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg text-sm font-medium hover:bg-[var(--accent-hover)] transition-all">
           Save all
         </button>
-        <button type="button" onClick={onClose} aria-label="Close bulk add" className="px-2 py-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition-colors">
+        <button type="button" onClick={onClose} aria-label="Close bulk add" className="px-2 py-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
           <Icon name="x" size="16" />
         </button>
       </div>
@@ -458,7 +458,7 @@ function BulkAddPanel({ companies, onSubmit, onClose }) {
         />
 
         <div>
-          <Typography variant="caption" className="text-gray-500 dark:text-gray-400 block mb-2">
+          <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2">
             Other info — fill in whatever you have
           </Typography>
           <BulkToggleGrid fields={fields} setField={setField} />
@@ -481,11 +481,11 @@ function SampleDataPanel({ onLoad, onClose }) {
     <motion.div
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mb-8 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden"
+      className="mb-8 bg-[var(--surface-1)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden"
     >
-      <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
         <Icon name="sparkles" size="18" />
-        <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 flex-1">
+        <Typography variant="subtitle2" className="font-semibold text-[var(--text-primary)] flex-1">
           Sample data for every feature
         </Typography>
         <button
@@ -499,7 +499,7 @@ function SampleDataPanel({ onLoad, onClose }) {
           type="button"
           onClick={onClose}
           aria-label="Close sample data"
-          className="px-2 py-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 transition-colors"
+          className="px-2 py-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
           <Icon name="x" size="16" />
         </button>
@@ -507,13 +507,13 @@ function SampleDataPanel({ onLoad, onClose }) {
       <div className="max-h-[420px] overflow-y-auto">
         {Object.entries(groups).map(([group, rows]) => (
           <div key={group}>
-            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+            <div className="px-4 py-2 bg-[var(--surface-2)] text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider border-b border-[var(--border)]">
               {group}
             </div>
             {rows.map((row) => (
-              <div key={row.feature} className="grid grid-cols-12 gap-3 px-4 py-2.5 border-b border-gray-50 dark:border-gray-700 items-start">
-                <div className="col-span-4 text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{row.feature}</div>
-                <div className="col-span-8 text-sm text-gray-500 dark:text-gray-400 break-words">{row.sample}</div>
+              <div key={row.feature} className="grid grid-cols-12 gap-3 px-4 py-2.5 border-b border-[var(--border)] items-start">
+                <div className="col-span-4 text-sm font-medium text-[var(--text-primary)] truncate">{row.feature}</div>
+                <div className="col-span-8 text-sm text-[var(--text-secondary)] break-words">{row.sample}</div>
               </div>
             ))}
           </div>
@@ -804,7 +804,7 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
             {cardStyle === 'compact' ? (
               <span className="compact-number">{index + 1}</span>
             ) : (
-              <span className="inline-flex items-center justify-center w-6 h-6 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-xs font-bold">{index + 1}</span>
+              <span className="inline-flex items-center justify-center w-6 h-6 border border-[var(--border-strong)] rounded text-[var(--text-secondary)] text-xs font-bold">{index + 1}</span>
             )}
           </div>
           <div className="flex-1 min-w-0">
@@ -837,13 +837,13 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
             aria-label={`Remove ${company.name}`}
             whileHover={{ scale: 1.3 }}
             whileTap={{ scale: 0.8 }}
-            className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
+            className="text-[var(--text-muted)] hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
           >
             <Icon name="trash" size="18" />
           </motion.button>
         </div>
         {cardStyle === 'detailed' && (
-          <Typography variant="caption" className="text-gray-500 dark:text-gray-400 block mb-2 text-xs leading-tight masked-text" data-text={`${companyLinks.length} link${companyLinks.length !== 1 ? 's' : ''} · ${companyResume ? 'Resume uploaded' : 'No resume'}`}>
+          <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2 text-xs leading-tight masked-text" data-text={`${companyLinks.length} link${companyLinks.length !== 1 ? 's' : ''} · ${companyResume ? 'Resume uploaded' : 'No resume'}`}>
             <span>{companyLinks.length} link{companyLinks.length !== 1 ? 's' : ''} · {companyResume ? 'Resume uploaded' : 'No resume'}</span>
           </Typography>
         )}
@@ -856,7 +856,7 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
           </div>
         )}
         {cardStyle === 'detailed' && companyResume && (
-          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="mt-2 p-2 bg-white dark:bg-gray-800 rounded-lg flex items-center gap-2">
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="mt-2 p-2 bg-[var(--surface-1)] rounded-lg flex items-center gap-2">
             <Icon name="fileText" size="16" color="#ef4444" />
             <Typography variant="caption" className="text-xs truncate block max-w-full masked-text" data-text={companyResume.name}><span>{companyResume.name}</span></Typography>
           </motion.div>
@@ -980,7 +980,7 @@ export function HomePage() {
   const { mode, toggleMode } = useThemeMode()
 
   return (
-    <div className="min-h-screen py-10 px-4">
+    <div className="min-h-screen page-bg page-dashboard py-10 px-4">
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-3">
@@ -1022,7 +1022,7 @@ export function HomePage() {
       </motion.form>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex flex-wrap items-center justify-center gap-2 mb-8">
-        <span className="text-sm text-gray-500 dark:text-gray-400 font-medium mr-2">Card Style:</span>
+        <span className="text-sm text-[var(--text-secondary)] font-medium mr-2">Card Style:</span>
         {[
           { id: 'compact', label: 'Compact', icon: 'list' },
           { id: 'detailed', label: 'Detailed', icon: 'columns' },
@@ -1035,7 +1035,7 @@ export function HomePage() {
 
       {query && (
         <div className="flex justify-between items-center px-2 mb-4">
-          <span className="text-sm text-gray-500 dark:text-gray-400">{filtered.length} {filtered.length === 1 ? 'company' : 'companies'} found</span>
+          <span className="text-sm text-[var(--text-secondary)]">{filtered.length} {filtered.length === 1 ? 'company' : 'companies'} found</span>
           <button className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" onClick={() => setQuery('')}>Clear</button>
         </div>
       )}
@@ -1044,7 +1044,7 @@ export function HomePage() {
           are reachable on a first visit; only the list-specific toggles are gated. */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-2 mb-5 flex-wrap">
         {stats.total > 0 && (
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCollapsed(!collapsed)} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-[var(--border-strong)] transition-all flex items-center gap-2">
+          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setCollapsed(!collapsed)} className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)] transition-all flex items-center gap-2">
             <Icon name="chevronDown" size="16" /> {collapsed ? 'Show All Companies' : 'Collapse List'}
           </motion.button>
         )}
@@ -1059,7 +1059,7 @@ export function HomePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowSamples((v) => !v)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showSamples ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[var(--border-strong)]'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showSamples ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}
           >
             <Icon name="sparkles" size="16" /> Sample data
           </motion.button>
@@ -1073,7 +1073,7 @@ export function HomePage() {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setShowBulk((v) => !v)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showBulk ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[var(--border-strong)]'}`}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showBulk ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}
         >
           <Icon name="clipboardCheck" size="16" /> Bulk add
         </motion.button>
@@ -1087,7 +1087,7 @@ export function HomePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleMode}
-            className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:border-[var(--border-strong)] transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:border-[var(--border-strong)] transition-all flex items-center gap-2"
           >
             <Icon name={mode === 'dark' ? 'sun' : 'moon'} size="16" /> {mode === 'dark' ? 'Light mode' : 'Dark mode'}
           </motion.button>
@@ -1098,7 +1098,7 @@ export function HomePage() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowTracker(!showTracker)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showTracker ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[var(--border-strong)]'}`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 border ${showTracker ? 'bg-[var(--accent)] text-[var(--on-accent)] border-[var(--accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border)] hover:border-[var(--border-strong)]'}`}
           >
             <Icon name="list" size="16" /> {showTracker ? 'Hide Job Links Tracker' : 'Show Job Links Tracker'}
           </motion.button>
@@ -1133,12 +1133,12 @@ export function HomePage() {
 
       {companies.length > 0 && showTracker && (
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mb-6">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2">
+          <div className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--border)] flex items-center gap-2">
               <Icon name="list" size="18" />
-              <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200">Job Links Tracker</Typography>
+              <Typography variant="subtitle2" className="font-semibold text-[var(--text-primary)]">Job Links Tracker</Typography>
             </div>
-            <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+            <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-[var(--surface-2)] text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider border-b border-[var(--border)]">
               <div className="col-span-1">SR No</div>
               <div className="col-span-3">Company</div>
               <div className="col-span-2">Status</div>
@@ -1147,10 +1147,10 @@ export function HomePage() {
               <div className="col-span-2">Note</div>
             </div>
             {companies.map((c, i) => (
-              <motion.div key={c.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center border-b border-gray-50 hover:bg-[var(--accent-soft)]/30 transition-colors card-magnetic" whileHover={{ scale: 1.01 }}>
-                <div className="col-span-1"><span className="inline-flex items-center justify-center w-6 h-6 border border-gray-300 dark:border-gray-600 rounded text-gray-500 dark:text-gray-400 text-xs font-bold">{i + 1}</span></div>
+              <motion.div key={c.id} className="grid grid-cols-12 gap-2 px-4 py-2.5 items-center border-b border-[var(--border)] hover:bg-[var(--accent-soft)]/30 transition-colors card-magnetic" whileHover={{ scale: 1.01 }}>
+                <div className="col-span-1"><span className="inline-flex items-center justify-center w-6 h-6 border border-[var(--border-strong)] rounded text-[var(--text-secondary)] text-xs font-bold">{i + 1}</span></div>
                 <div className="col-span-3 truncate">
-                  <span className="font-medium text-gray-700 dark:text-gray-200 text-sm">{c.name}</span>
+                  <span className="font-medium text-[var(--text-primary)] text-sm">{c.name}</span>
                 </div>
                 {/* These two read straight off the Status and Priority toggles. They
                     replace the old derived Active/Pending chip, which only ever said
@@ -1169,7 +1169,7 @@ export function HomePage() {
                     <Icon name="link" size="14" /> {allLinks(c).length} {allLinks(c).length === 1 ? 'link' : 'links'}
                   </span>
                 </div>
-                <div className="col-span-2 text-xs text-gray-500 dark:text-gray-400 truncate">
+                <div className="col-span-2 text-xs text-[var(--text-secondary)] truncate">
                   {allLinks(c).length > 0 ? `Last: ${allLinks(c).at(-1).label || allLinks(c).at(-1).url}` : 'No links yet'}
                 </div>
               </motion.div>
@@ -1183,8 +1183,8 @@ export function HomePage() {
         {filtered.length === 0 ? (
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
             <Icon name="briefcase" size="64" color="#d1d5db" />
-            <p className="text-xl text-gray-400 dark:text-gray-500 mt-4">{query ? 'No matching companies.' : 'Add a company to get started'}</p>
-            <p className="text-sm text-gray-300 dark:text-gray-600 mt-1">Double-click a company name to edit it</p>
+            <p className="text-xl text-[var(--text-muted)] mt-4">{query ? 'No matching companies.' : 'Add a company to get started'}</p>
+            <p className="text-sm text-[var(--text-muted)] mt-1">Double-click a company name to edit it</p>
             {/* Only offered on a genuinely empty tracker, never while a search is
                 filtering everything out -- otherwise this would look like an action
                 on the search result and could bury real data under samples.
@@ -1196,7 +1196,7 @@ export function HomePage() {
                 onClick={loadSampleData}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="mt-6 px-5 py-2.5 bg-white dark:bg-gray-800 border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all inline-flex items-center gap-2 magnetic-snap"
+                className="mt-6 px-5 py-2.5 bg-[var(--surface-1)] border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all inline-flex items-center gap-2 magnetic-snap"
               >
                 <Icon name="plusCircle" size="18" /> Load sample data
               </motion.button>
@@ -1222,12 +1222,12 @@ export function HomePage() {
         )}
 
         {companies.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 card-magnetic">
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] p-4 card-magnetic">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 bg-[var(--accent-soft)] rounded-lg flex items-center justify-center"><Icon name="fileText" size="18" /></div>
               <div>
-                <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Quick Notes</Typography>
-                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Track your applications with the SR No and Status tracker above. Double-click any company name to edit inline. Use the card style toggle to switch between Default, Compact, Detailed, and Featured views. Upload resumes to each company for easy tracking.</p>
+                <Typography variant="subtitle2" className="font-semibold text-[var(--text-primary)] mb-1">Quick Notes</Typography>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">Track your applications with the SR No and Status tracker above. Double-click any company name to edit inline. Use the card style toggle to switch between Default, Compact, Detailed, and Featured views. Upload resumes to each company for easy tracking.</p>
               </div>
             </div>
           </motion.div>
@@ -1265,20 +1265,20 @@ function CompanyLinks({ role, addLink, editingLink, setEditingLink, editLabel, s
       {role.links.length > 0 && (
         <motion.ul className="space-y-3" style={{ listStyle: 'none', padding: 0, margin: 0 }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
           {role.links.map((link) => (
-            <motion.li key={link.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 card-magnetic card-shimmer" layout whileHover={{ scale: 1.02, boxShadow: '0 8px 24px rgba(147, 51, 234, 0.1)' }}>
+            <motion.li key={link.id} className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] p-4 card-magnetic card-shimmer" layout whileHover={{ scale: 1.02, boxShadow: '0 8px 24px rgba(147, 51, 234, 0.1)' }}>
               {editingLink === link.id ? (
                 <div className="flex gap-2 items-center card-magnetic">
                   <TextField size="small" placeholder="Label" value={editLabel} onChange={(e) => setEditLabel(e.target.value)} className="w-32" />
                   <TextField size="small" placeholder="URL" value={editUrl} onChange={(e) => setEditUrl(e.target.value)} className="w-40" />
                   <motion.button onClick={() => updateLink(link.id)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="px-3 py-1.5 bg-green-500 text-white rounded-lg text-sm flex items-center gap-1"><Icon name="check" size="18" /> Save</motion.button>
-                  <motion.button onClick={() => { setEditingLink(null); setEditLabel(''); setEditUrl('') }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="px-3 py-1.5 bg-gray-200 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 transition-colors flex items-center gap-1"><Icon name="x" size="18" /> Cancel</motion.button>
+                  <motion.button onClick={() => { setEditingLink(null); setEditLabel(''); setEditUrl('') }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="px-3 py-1.5 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm hover:bg-[var(--accent-soft)] transition-colors flex items-center gap-1"><Icon name="x" size="18" /> Cancel</motion.button>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
                   <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[200px] text-[var(--text-primary)] no-underline hover:underline flex items-center gap-2 text-sm overflow-hidden text-ellipsis whitespace-nowrap" onDoubleClick={() => { setEditingLink(link.id); setEditLabel(link.label || ''); setEditUrl(link.url) }}>
                     <Icon name="externalLink" size="14" /> {link.label || link.url}
                   </a>
-                  <motion.button onClick={() => removeLink(link.id)} whileHover={{ scale: 1.3 }} whileTap={{ scale: 0.8 }} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors flex-shrink-0"><Icon name="trash" size="18" /></motion.button>
+                  <motion.button onClick={() => removeLink(link.id)} whileHover={{ scale: 1.3 }} whileTap={{ scale: 0.8 }} className="text-[var(--text-muted)] hover:text-red-500 transition-colors flex-shrink-0"><Icon name="trash" size="18" /></motion.button>
                 </div>
               )}
             </motion.li>
@@ -1294,10 +1294,10 @@ function CompanyResume({ role, setResume, handleDownload, handleFileChange, file
     <div>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
       {role.resume ? (
-        <motion.div whileHover={{ scale: 1.02 }} className="flex items-center gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 card-magnetic card-shimmer">
+        <motion.div whileHover={{ scale: 1.02 }} className="flex items-center gap-3 p-4 bg-[var(--surface-1)] rounded-xl border border-[var(--border)] card-magnetic card-shimmer">
           <Icon name="fileText" size="24" color="#ef4444" />
           <span className="flex-1 text-sm truncate masked-text" data-text={role.resume.name}><span>{role.resume.name}</span></span>
-          <motion.button onClick={handleDownload} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm hover:bg-gray-50 transition-all flex items-center gap-1 flex-shrink-0"><Icon name="download" size="16" /> Download</motion.button>
+          <motion.button onClick={handleDownload} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg text-sm hover:bg-[var(--surface-2)] transition-all flex items-center gap-1 flex-shrink-0"><Icon name="download" size="16" /> Download</motion.button>
           <motion.button onClick={() => setResume(null)} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-sm hover:bg-red-100 transition-all flex-shrink-0"><Icon name="x" size="16" /></motion.button>
         </motion.div>
       ) : (
@@ -1310,7 +1310,7 @@ function CompanyResume({ role, setResume, handleDownload, handleFileChange, file
           htmlFor="resume-upload"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          className="block w-full py-4 bg-white dark:bg-gray-800 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-center text-gray-500 dark:text-gray-400 hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="block w-full py-4 bg-[var(--surface-1)] border-2 border-dashed border-[var(--border-strong)] rounded-xl text-center text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all cursor-pointer flex items-center justify-center gap-2"
         >
           <Icon name="upload" size="20" /> Upload Resume
           <input id="resume-upload" type="file" accept=".pdf,.doc,.docx,.txt,.md" className="sr-only" onChange={handleFileChange} />
@@ -1332,13 +1332,13 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
       <AnimatePresence>
       {customNames.map((cn) => (
           <motion.div key={cn} className="flex items-center gap-3 mb-3 card-magnetic" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} whileHover={{ scale: 1.01 }}>
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 min-w-[140px] truncate masked-text" data-text={cn}><span>{cn}</span>:</span>
+            <span className="text-sm font-semibold text-[var(--text-primary)] min-w-[140px] truncate masked-text" data-text={cn}><span>{cn}</span>:</span>
             <CustomFieldInput name={cn} value={customFields[cn]} onChange={(v) => updateCustomField(cn, v)} />
           </motion.div>
       ))}
       {!showCustomInput && availablePresets.length > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-4">
-          <Typography variant="caption" className="text-gray-500 dark:text-gray-400 block mb-2">Quick add</Typography>
+          <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2">Quick add</Typography>
           <div className="flex flex-wrap gap-2">
             {availablePresets.map((preset) => (
               <motion.button
@@ -1347,7 +1347,7 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
                 onClick={() => addCustomFieldNamed(preset.name)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-[var(--border)] rounded-full text-sm text-[var(--text-primary)] hover:bg-[var(--accent-soft)] hover:border-[var(--border-strong)] transition-all flex items-center gap-1.5 magnetic-snap"
+                className="px-3 py-1.5 bg-[var(--surface-1)] border border-[var(--border)] rounded-full text-sm text-[var(--text-primary)] hover:bg-[var(--accent-soft)] hover:border-[var(--border-strong)] transition-all flex items-center gap-1.5 magnetic-snap"
               >
                 <Icon name="plusCircle" size="14" /> {preset.name}
               </motion.button>
@@ -1362,14 +1362,14 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
            for adding a custom field should be. `animate` is what ends the initial
            state. Example: mounts at opacity 0, animates to opacity 1. */
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} whileHover={{ scale: 1.02 }}>
-          <button onClick={() => setShowCustomInput(true)} className="w-full py-3 bg-white dark:bg-gray-800 border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center gap-2"><Icon name="plusCircle" size="18" /> Add your own toggle</button>
+          <button onClick={() => setShowCustomInput(true)} className="w-full py-3 bg-[var(--surface-1)] border-2 border-dashed border-[var(--border-strong)] rounded-xl text-[var(--text-secondary)] font-medium hover:bg-[var(--accent-soft)] transition-all flex items-center justify-center gap-2"><Icon name="plusCircle" size="18" /> Add your own toggle</button>
         </motion.div>
       )}
       {showCustomInput && (
         <motion.div className="flex gap-3 mb-3" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ scale: 1.01 }}>
           <TextField size="small" placeholder="Toggle name, e.g. Referral" value={customName} onChange={(e) => setCustomName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addCustomField()} fullWidth />
           <motion.button onClick={addCustomField} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-4 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-all"><Icon name="check" size="16" /></motion.button>
-          <motion.button onClick={() => setShowCustomInput(false)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-4 py-2 bg-gray-200 text-gray-600 dark:text-gray-300 rounded-lg text-sm hover:bg-gray-300 transition-all"><Icon name="x" size="16" /></motion.button>
+          <motion.button onClick={() => setShowCustomInput(false)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-4 py-2 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm hover:bg-[var(--accent-soft)] transition-all"><Icon name="x" size="16" /></motion.button>
         </motion.div>
       )}
     </AnimatePresence>
@@ -1384,7 +1384,7 @@ function CompanyCustom({ customFields, customNames, showCustomInput, customName,
 function RoleSection({ title, children }) {
   return (
     <section className="mb-6">
-      <Typography variant="subtitle2" className="font-semibold text-gray-700 dark:text-gray-200 mb-3">{title}</Typography>
+      <Typography variant="subtitle2" className="font-semibold text-[var(--text-primary)] mb-3">{title}</Typography>
       {children}
     </section>
   )
@@ -1414,7 +1414,7 @@ function RoleDetailedView({ role, addLink, editingLink, setEditingLink, editLabe
 // on every render, which remounts its subtree and drops focus out of any field inside.
 // Example: <TableCard><table …/></TableCard>
 function TableCard({ children }) {
-  return <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">{children}</div>
+  return <div className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] overflow-hidden mb-4">{children}</div>
 }
 
 // The dense layout. Everything about the role on one scannable screen: its toggles as
@@ -1451,24 +1451,24 @@ function RoleTableView({
 
   return (
     <div data-testid="table-view">
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
+      <div className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] overflow-hidden mb-4">
         <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <thead>
-            <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
-              <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[34%]">Field</th>
-              <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Value</th>
+            <tr className="bg-[var(--surface-2)] border-b border-[var(--border)]">
+              <th className="text-left px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider w-[34%]">Field</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Value</th>
             </tr>
           </thead>
           <tbody>
             {customNames.length === 0 ? (
               <tr>
-                <td colSpan={2} className="px-4 py-5 text-sm text-gray-400 dark:text-gray-500 text-center">
+                <td colSpan={2} className="px-4 py-5 text-sm text-[var(--text-muted)] text-center">
                   No toggles on this role yet — add one below.
                 </td>
               </tr>
             ) : customNames.map((cn) => (
-              <tr key={cn} className="border-b border-gray-50 dark:border-gray-700 last:border-b-0 align-middle">
-                <td className="px-4 py-1.5 font-medium text-gray-700 dark:text-gray-200 truncate">{cn}</td>
+              <tr key={cn} className="border-b border-[var(--border)] last:border-b-0 align-middle">
+                <td className="px-4 py-1.5 font-medium text-[var(--text-primary)] truncate">{cn}</td>
                 <td className="px-4 py-1.5">
                   <CustomFieldInput name={cn} value={customFields[cn]} onChange={(v) => updateCustomField(cn, v)} />
                 </td>
@@ -1480,15 +1480,15 @@ function RoleTableView({
         {/* The old empty state pointed at another view, which made this one a dead end.
             Missing presets are addable right here instead. */}
         {availablePresets.length > 0 && (
-          <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-            <Typography variant="caption" className="text-gray-500 dark:text-gray-400 block mb-2">Add a field</Typography>
+          <div className="px-4 py-3 border-t border-[var(--border)] bg-[var(--surface-2)]">
+            <Typography variant="caption" className="text-[var(--text-secondary)] block mb-2">Add a field</Typography>
             <div className="flex flex-wrap gap-1.5">
               {availablePresets.map((t) => (
                 <button
                   key={t.name}
                   type="button"
                   onClick={() => addCustomFieldNamed(t.name)}
-                  className="px-2.5 py-1 bg-white dark:bg-gray-800 border border-[var(--border)] dark:border-[var(--accent)]/40 rounded-full text-xs text-[var(--text-primary)] hover:bg-[var(--accent-soft)] transition-all"
+                  className="px-2.5 py-1 bg-[var(--surface-1)] border border-[var(--border)] dark:border-[var(--accent)]/40 rounded-full text-xs text-[var(--text-primary)] hover:bg-[var(--accent-soft)] transition-all"
                 >
                   + {t.name}
                 </button>
@@ -1499,10 +1499,10 @@ function RoleTableView({
       </div>
 
       <TableCard>
-        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 py-2 bg-[var(--surface-2)] text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider border-b border-[var(--border)]">
           Links ({role.links.length})
         </div>
-        <form onSubmit={submitLink} className="flex flex-wrap items-start gap-2 px-4 py-3 border-b border-gray-50 dark:border-gray-700">
+        <form onSubmit={submitLink} className="flex flex-wrap items-start gap-2 px-4 py-3 border-b border-[var(--border)]">
           <TextField size="small" placeholder="Label" value={label} onChange={(e) => setLabel(e.target.value)} className="flex-1 min-w-[120px]" />
           <TextField
             size="small" placeholder="https://..." value={url}
@@ -1515,13 +1515,13 @@ function RoleTableView({
           </button>
         </form>
         {role.links.length === 0 ? (
-          <div className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No links on this role yet.</div>
+          <div className="px-4 py-3 text-sm text-[var(--text-muted)]">No links on this role yet.</div>
         ) : role.links.map((l) => (
-          <div key={l.id} className="flex items-center gap-2 px-4 py-2 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
+          <div key={l.id} className="flex items-center gap-2 px-4 py-2 border-b border-[var(--border)] last:border-b-0">
             <a href={l.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 text-sm text-[var(--text-primary)] hover:underline truncate">
               {l.label || l.url}
             </a>
-            <button type="button" onClick={() => removeLink(l.id)} aria-label={`Remove link ${l.label || l.url}`} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors shrink-0">
+            <button type="button" onClick={() => removeLink(l.id)} aria-label={`Remove link ${l.label || l.url}`} className="text-[var(--text-muted)] hover:text-red-500 transition-colors shrink-0">
               <Icon name="trash" size="16" />
             </button>
           </div>
@@ -1529,7 +1529,7 @@ function RoleTableView({
       </TableCard>
 
       <TableCard>
-        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 py-2 bg-[var(--surface-2)] text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider border-b border-[var(--border)]">
           Resume
         </div>
         <div className="px-4 py-3">
@@ -1537,11 +1537,11 @@ function RoleTableView({
             <div className="flex items-center gap-2">
               <Icon name="fileText" size="16" color="#ef4444" />
               <span className="flex-1 min-w-0 text-sm truncate">{role.resume.name}</span>
-              <button type="button" onClick={handleDownload} className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-[var(--text-primary)] transition-colors" aria-label="Download resume"><Icon name="download" size="16" /></button>
-              <button type="button" onClick={() => setResume(null)} className="px-2 py-1 text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors" aria-label="Remove resume"><Icon name="x" size="16" /></button>
+              <button type="button" onClick={handleDownload} className="px-2 py-1 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors" aria-label="Download resume"><Icon name="download" size="16" /></button>
+              <button type="button" onClick={() => setResume(null)} className="px-2 py-1 text-sm text-[var(--text-muted)] hover:text-red-500 transition-colors" aria-label="Remove resume"><Icon name="x" size="16" /></button>
             </div>
           ) : (
-            <label htmlFor="resume-upload-table" className="flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all cursor-pointer">
+            <label htmlFor="resume-upload-table" className="flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-[var(--border-strong)] rounded-lg text-sm text-[var(--text-secondary)] hover:border-[var(--border-strong)] hover:text-[var(--text-primary)] transition-all cursor-pointer">
               <Icon name="upload" size="16" /> Upload resume
               <input id="resume-upload-table" type="file" accept=".pdf,.doc,.docx,.txt,.md" className="sr-only" onChange={handleFileChange} />
             </label>
@@ -1566,13 +1566,13 @@ function RoleComparisonView({ roles }) {
   ]
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-x-auto">
+    <div className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
-            <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Field</th>
+          <tr className="bg-[var(--surface-2)] border-b border-[var(--border)]">
+            <th className="text-left px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider">Field</th>
             {roles.map((r) => (
-              <th key={r.id} className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+              <th key={r.id} className="text-left px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider whitespace-nowrap">
                 {r.title}
               </th>
             ))}
@@ -1580,13 +1580,13 @@ function RoleComparisonView({ roles }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.label} className="border-b border-gray-50 dark:border-gray-700 last:border-b-0">
-              <td className="px-4 py-2.5 font-medium text-gray-700 dark:text-gray-200 whitespace-nowrap">{row.label}</td>
+            <tr key={row.label} className="border-b border-[var(--border)] last:border-b-0">
+              <td className="px-4 py-2.5 font-medium text-[var(--text-primary)] whitespace-nowrap">{row.label}</td>
               {roles.map((r) => {
                 const v = row.get(r)
                 return (
-                  <td key={r.id} className="px-4 py-2.5 text-gray-600 dark:text-gray-300 align-top">
-                    {v ? v : <span className="text-gray-300 dark:text-gray-600">&mdash;</span>}
+                  <td key={r.id} className="px-4 py-2.5 text-[var(--text-secondary)] align-top">
+                    {v ? v : <span className="text-[var(--text-muted)]">&mdash;</span>}
                   </td>
                 )
               })}
@@ -1625,8 +1625,8 @@ function readRolesLayout() {
 function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleView }) {
   return (
     <div className="flex items-center gap-2" data-testid="view-strip">
-      <Typography variant="caption" className="text-gray-500 dark:text-gray-400">View</Typography>
-      <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <Typography variant="caption" className="text-[var(--text-secondary)]">View</Typography>
+      <div className="inline-flex rounded-lg border border-[var(--border)] overflow-hidden">
         {ROLE_VIEWS.map((v) => {
           const on = !comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === v.id
           return (
@@ -1635,7 +1635,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
               type="button"
               aria-pressed={on}
               onClick={() => { setComparing(false); setRoleView(v.id) }}
-              className={`px-3 py-1.5 text-sm font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${on ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-[var(--accent-soft)]'}`}
+              className={`px-3 py-1.5 text-sm font-medium transition-all border-r border-[var(--border)] last:border-r-0 ${on ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)]'}`}
             >
               {v.label}
             </button>
@@ -1646,7 +1646,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
             type="button"
             aria-pressed={comparing}
             onClick={() => setComparing((c) => !c)}
-            className={`px-3 py-1.5 text-sm font-medium transition-all border-l border-gray-200 dark:border-gray-700 ${comparing ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-[var(--accent-soft)]'}`}
+            className={`px-3 py-1.5 text-sm font-medium transition-all border-l border-[var(--border)] ${comparing ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)]'}`}
           >
             All roles
           </button>
@@ -1660,7 +1660,7 @@ function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleV
 // Example: <RolesLayoutToggle layout="rail" setLayout={fn} />
 function RolesLayoutToggle({ layout, setLayout }) {
   return (
-    <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" data-testid="roles-layout-toggle">
+    <div className="inline-flex rounded-lg border border-[var(--border)] overflow-hidden" data-testid="roles-layout-toggle">
       {ROLES_LAYOUTS.map((l) => (
         <button
           key={l.id}
@@ -1668,7 +1668,7 @@ function RolesLayoutToggle({ layout, setLayout }) {
           aria-pressed={layout === l.id}
           aria-label={`Roles as ${l.label.toLowerCase()}`}
           onClick={() => setLayout(l.id)}
-          className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${layout === l.id ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-[var(--accent-soft)]'}`}
+          className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition-all border-r border-[var(--border)] last:border-r-0 ${layout === l.id ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--surface-1)] text-[var(--text-secondary)] hover:bg-[var(--accent-soft)]'}`}
         >
           <Icon name={l.icon} size="14" /> {l.label}
         </button>
@@ -1696,10 +1696,10 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
               data-role-chip={r.title}
               draggable
               {...dragProps(i)}
-              className={`group flex items-center gap-1 rounded-lg transition-all ${draggingRole === i ? 'opacity-40' : ''} ${on ? 'bg-[var(--accent-soft)]' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+              className={`group flex items-center gap-1 rounded-lg transition-all ${draggingRole === i ? 'opacity-40' : ''} ${on ? 'bg-[var(--accent-soft)]' : 'hover:bg-[var(--surface-2)]'}`}
             >
               {roles.length > 1 && (
-                <span className="cursor-grab select-none text-gray-300 dark:text-gray-600 pl-2" aria-hidden="true">⠿</span>
+                <span className="cursor-grab select-none text-[var(--text-muted)] pl-2" aria-hidden="true">⠿</span>
               )}
               <button
                 type="button"
@@ -1708,8 +1708,8 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
                 aria-pressed={on}
                 className={`flex-1 min-w-0 text-left px-2 py-2 border-l-2 transition-all ${on ? 'border-[var(--accent)]' : 'border-transparent'}`}
               >
-                <span className={`block truncate text-sm font-medium ${on ? 'text-[var(--text-primary)]' : 'text-gray-700 dark:text-gray-200'}`}>{r.title}</span>
-                <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
+                <span className={`block truncate text-sm font-medium ${on ? 'text-[var(--text-primary)]' : 'text-[var(--text-primary)]'}`}>{r.title}</span>
+                <span className="block truncate text-xs text-[var(--text-secondary)]">
                   {r.customFields?.Status || 'No status'} · {r.links.length} {r.links.length === 1 ? 'link' : 'links'}
                 </span>
               </button>
@@ -1718,7 +1718,7 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
                   type="button"
                   onClick={() => removeRole(r.id)}
                   aria-label={`Remove role ${r.title}`}
-                  className="px-2 text-gray-300 dark:text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                  className="px-2 text-[var(--text-muted)] hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
                 >
                   <Icon name="x" size="14" />
                 </button>
@@ -1748,7 +1748,7 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
           />
           <div className="flex gap-2">
             <button type="button" onClick={() => addRole(newRoleTitle)} aria-label="Save role" className="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-all"><Icon name="check" size="16" /></button>
-            <button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} aria-label="Cancel role" className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm transition-all"><Icon name="x" size="16" /></button>
+            <button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} aria-label="Cancel role" className="flex-1 px-3 py-2 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm transition-all"><Icon name="x" size="16" /></button>
           </div>
         </div>
       )}
@@ -1828,7 +1828,7 @@ export function CompanyPage() {
   if (!company) return (
     <div className="text-center py-16">
       <Icon name="alertCircle" size="64" color="#d1d5db" />
-      <p className="text-xl text-gray-400 dark:text-gray-500 mt-4">Company not found</p>
+      <p className="text-xl text-[var(--text-muted)] mt-4">Company not found</p>
       <button onClick={() => router.back()} className="mt-4 px-4 py-2 bg-[var(--accent)] text-[var(--on-accent)] rounded-lg hover:bg-[var(--accent-hover)] transition-all flex items-center gap-2"><Icon name="arrowLeft" size="16" /> Go Back</button>
     </div>
   )
@@ -1972,8 +1972,8 @@ export function CompanyPage() {
   }
 
   return (
-    <div className="min-h-screen py-8 px-4">
-      <button onClick={() => router.back()} className="mb-6 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-[var(--border-strong)] transition-all flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"><Icon name="arrowLeft" size="16" /> Back</button>
+    <div className="min-h-screen page-bg page-company py-8 px-4">
+      <button onClick={() => router.back()} className="mb-6 px-4 py-2 bg-[var(--surface-1)] border border-[var(--border)] rounded-lg hover:border-[var(--border-strong)] transition-all flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]"><Icon name="arrowLeft" size="16" /> Back</button>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="flex justify-between items-center mb-6 flex-wrap gap-2">
         <h1 className="text-2xl font-bold flex items-center gap-2"><Icon name="briefcase" size="24" /> {company.name}</h1>
@@ -2009,8 +2009,8 @@ export function CompanyPage() {
                     <span className="flex items-center gap-2">
                       <Icon name="briefcase" size="14" />
                       <span className="truncate">{r.title}</span>
-                      {status && <span className="text-gray-400 dark:text-gray-500">·</span>}
-                      {status && <span className="text-gray-500 dark:text-gray-400 truncate">{status}</span>}
+                      {status && <span className="text-[var(--text-muted)]">·</span>}
+                      {status && <span className="text-[var(--text-secondary)] truncate">{status}</span>}
                     </span>
                   )
                 },
@@ -2027,7 +2027,7 @@ export function CompanyPage() {
                 className={draggingRole === i ? 'opacity-40' : ''}
               >
                 <span className="flex items-center gap-2 w-full">
-                  {roles.length > 1 && <span className="cursor-grab select-none text-gray-300 dark:text-gray-600" aria-hidden="true">⠿</span>}
+                  {roles.length > 1 && <span className="cursor-grab select-none text-[var(--text-muted)]" aria-hidden="true">⠿</span>}
                   <span className="truncate flex-1">{r.title}</span>
                   {r.customFields?.Status && (
                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[r.customFields.Status] || NEUTRAL_CHIP}`}>
@@ -2061,7 +2061,7 @@ export function CompanyPage() {
                 autoFocus
               />
               <motion.button type="button" onClick={() => addRole(newRoleTitle)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-all" aria-label="Save role"><Icon name="check" size="16" /></motion.button>
-              <motion.button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm transition-all" aria-label="Cancel role"><Icon name="x" size="16" /></motion.button>
+              <motion.button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-2 bg-[var(--accent-soft)] text-[var(--text-secondary)] rounded-lg text-sm transition-all" aria-label="Cancel role"><Icon name="x" size="16" /></motion.button>
             </div>
           )}
 
@@ -2072,7 +2072,7 @@ export function CompanyPage() {
               aria-label={`Remove role ${activeRole.title}`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-3 py-2 rounded-lg text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1.5"
+              className="px-3 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:text-red-500 transition-colors flex items-center gap-1.5"
             >
               <Icon name="trash" size="16" />
             </motion.button>
@@ -2110,9 +2110,9 @@ export function CompanyPage() {
       {/* The sub-tab strip belongs to the compact layout only; the other layouts show
           every section at once, so tabs would have nothing to switch. */}
       {!comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === 'compact' && (
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-1.5 border-b-2 border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto pb-0 tab-nav">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex gap-1.5 border-b-2 border-[var(--border)] mb-6 overflow-x-auto pb-0 tab-nav">
         {subTabs.map((key) => (
-          <button key={key} data-subtab={key} onClick={() => setActiveSubTab(key)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${activeSubTab === key ? 'active border-[var(--accent)] text-[var(--text-primary)]' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>
+          <button key={key} data-subtab={key} onClick={() => setActiveSubTab(key)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all ${activeSubTab === key ? 'active border-[var(--accent)] text-[var(--text-primary)]' : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
             <Icon name={key === 'links' ? 'link' : key === 'resume' ? 'fileText' : 'tag'} size="16" /> {getSubTabLabel(key)}
             {key === 'links' && roleLinkCount(activeRole) > 0 && <span className="ml-1.5 text-[var(--text-muted)]">{roleLinkCount(activeRole)}</span>}
             {key === 'custom' && customNames.length > 0 && <span className="ml-1.5 text-[var(--text-muted)]">{customNames.length}</span>}

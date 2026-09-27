@@ -103,6 +103,11 @@
 ## Completed — UI system
 
 - One accent, and it is **graphite** rather than a hue — near-black in light, near-white in dark. Colour is left free to mean something.
+- Each page carries its own soft wash so the app is not white-on-white, and so the screen you are on is recognisable at a glance.
+- The dashboard sits on a cool sky tint, a company page on a soft sage tint.
+- Both are a flat colour plus two very faint radial glows — no gradient banding, no noise.
+- Dark mode keeps the same two hues as tinted charcoal rather than going flat black, so a page never reads as a hole in the screen.
+- Cards stay white (or the dark surface) on top of the wash, so they lift off it.
 - `buildTheme(mode)` points MUI at the same tokens the hand-written controls use — radius, border colour, control height, font size — so an MUI input and a plain button beside it read as one family instead of two.
 - `ThemeModeProvider` owns the mode, mirrors it onto `<html class="dark">` and persists it under `job-tracker-theme`.
 - A first visit follows the OS `prefers-color-scheme`; after that the saved choice wins.
@@ -299,6 +304,12 @@
 - Turbopack's root is pinned in `next.config.mjs`, because a `package-lock.json` above the repo would otherwise be taken as the workspace root.
 - The test harness no longer renders a router. `next/navigation` and `next/link` are mocked against one mutable route, and `mount()` picks the page component the way the `app/` folder would.
 - Nothing about the appearance changed — the styling layer ported across untouched. The redesign is a separate piece of work.
+
+### Finishing the token migration
+
+- The design pass introduced the tokens but left most of the component layer on hardcoded Tailwind greys, so light and dark were still two palettes in practice rather than one definition.
+- Every surface, border and text colour in `src/App.jsx` now resolves from a token: **zero** `bg-white`, `text-gray-*`, `border-gray-*` or `dark:*-gray-*` classes remain.
+- That is what makes the page washes work — the cards sit on `--surface-1`, which the tint does not touch.
 
 ### Hydration
 

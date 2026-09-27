@@ -34,6 +34,16 @@
   --control-h: 36px;
   --radius: 8px;
   --radius-lg: 12px;
+
+  /* Page washes. Each screen gets its own soft tint so the app is not white-on-white,
+     and so you can tell at a glance which page you are on. They are deliberately very
+     pale -- cards stay white and sit on top of them -- and the accent stays graphite,
+     so nothing here competes with a status chip for meaning.
+     Example: the dashboard sits on a cool sky wash, a company page on a soft sage. */
+  --page-dashboard: #eff5fb;
+  --page-dashboard-glow: rgba(56, 132, 221, 0.10);
+  --page-company: #f0f7f3;
+  --page-company-glow: rgba(29, 158, 117, 0.10);
 }
 
 .dark {
@@ -49,6 +59,14 @@
   --accent-hover: #e4e4e7;
   --accent-soft: #232327;
   --on-accent: #18181b;
+
+  /* Dark mode keeps the same two hues rather than going flat black -- a tinted
+     charcoal, so the pages stay distinguishable and the surface does not read as a
+     hole in the screen. */
+  --page-dashboard: #0d1117;
+  --page-dashboard-glow: rgba(56, 132, 221, 0.14);
+  --page-company: #0c1411;
+  --page-company-glow: rgba(29, 158, 117, 0.12);
 }
 
 body {

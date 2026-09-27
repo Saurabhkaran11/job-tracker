@@ -166,9 +166,29 @@
 
 /* --- Page chrome ---------------------------------------------------- */
 
-/* Workspace motion background: three soft accent washes behind the page.
-   Example: <div className="min-h-screen workspace-bg py-8 px-4"> */
-.workspace-bg { background: var(--surface-0); }
+/* Page background.
+   Example: <div className="min-h-screen page-bg page-dashboard py-8 px-4"> */
+/* A page wash: its own flat tint plus two very soft radial glows, so a large empty
+   area has some life without any gradient banding or noise.
+   Example: <div className="page-bg page-dashboard"> */
+.page-bg {
+  background-color: var(--page-tint);
+  background-image:
+    radial-gradient(60rem 30rem at 15% -10%, var(--page-glow) 0%, transparent 60%),
+    radial-gradient(50rem 26rem at 90% 0%, var(--page-glow) 0%, transparent 55%);
+  background-repeat: no-repeat;
+  transition: background-color 0.2s ease;
+}
+
+.page-dashboard {
+  --page-tint: var(--page-dashboard);
+  --page-glow: var(--page-dashboard-glow);
+}
+
+.page-company {
+  --page-tint: var(--page-company);
+  --page-glow: var(--page-company-glow);
+}
 
 /* Shared vanishing point, so every tilted card in the grid leans toward the
    same spot instead of each tilting about its own centre.
