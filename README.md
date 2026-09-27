@@ -1,7 +1,7 @@
 # Job Tracker
 
 - A local-first React app for tracking job applications — one card per company, each holding its application links, a resume file, and free-form custom fields.
-- Built with Vite 8 + React 19, styled with Tailwind CSS v4 plus a hand-written motion layer in `src/App.css`.
+- Built with Next.js 16 (App Router) + React 19, styled with Tailwind CSS v4 plus a hand-written motion layer in `app/App.css`.
 - No backend and no accounts — everything persists to `localStorage` under the key `job-tracker-data`.
 
 ---
@@ -9,9 +9,9 @@
 ## Quick start
 
 - `npm install` — install dependencies.
-- `npm run dev` — start the Vite dev server with HMR.
-- `npm run build` — produce a production build in `dist/`.
-- `npm run preview` — serve the production build locally.
+- `npm run dev` — start the Next dev server.
+- `npm run build` — produce a production build.
+- `npm start` — serve the production build.
 - `npm run lint` — run Oxlint over the source.
 - `npm test` — run the full test suite once.
 - `npm run test:watch` — re-run tests as files change.
@@ -33,10 +33,10 @@
 
 ## Completed — screens
 
-- Two routes registered in `App`, using `react-router-dom` v7.
-- `/` renders `HomePage`.
-- `/company/:id` renders `CompanyPage`.
-- Provider stack wraps the router in this order — `QueryClientProvider`, `ThemeProvider`, `CssBaseline`, `ToastProvider`, `BrowserRouter`.
+- Two routes, expressed as files under `app/`.
+- `app/page.jsx` renders `HomePage`.
+- `app/company/[id]/page.jsx` renders `CompanyPage`.
+- `app/layout.jsx` sets document chrome; `app/providers.jsx` holds the client provider stack — `QueryClientProvider`, `ThemeModeProvider` (which supplies MUI's `ThemeProvider` and `CssBaseline`), `ToastProvider`.
 
 ### HomePage
 
@@ -284,10 +284,19 @@
 - No application-status field — there is nothing yet for `applied` / `interviewing` / `offer` / `rejected`.
 - Deleting a company is immediate with no undo — only the `window.confirm` prompt guards it.
 - No CI pipeline yet, though `npm test` runs the full suite locally.
-- `react-router-dom` is on `BrowserRouter`, so a static host needs a rewrite rule for deep links to `/company/:id`.
 - Several UI libraries ship in `dependencies` but are unused at runtime — Chakra, Grommet, PrimeReact, Phosphor, react-icons — and are worth pruning before a production build.
 
 ---
+
+## Moving from Vite to Next.js
+
+- Routing moved from `react-router-dom` to the App Router: `Link`'s `to` became `href`, `useParams` and `useRouter` now come from `next/navigation`, and `navigate(-1)` became `router.back()`.
+- `src/App.jsx` carries `'use client'` and exports its pieces instead of a router-mounted default. Every screen reads and writes `localStorage` and is driven by interaction, so there is nothing to render on a server.
+- `output: 'export'` is deliberately not set. Company ids are minted at runtime with `crypto.randomUUID()` and live only in the visitor's `localStorage`, so `/company/[id]` has no paths to pre-render — a static export demands `generateStaticParams()`, which cannot be written for data that does not exist at build time.
+- Tailwind v4 moved from its Vite plugin to PostCSS.
+- Turbopack's root is pinned in `next.config.mjs`, because a `package-lock.json` above the repo would otherwise be taken as the workspace root.
+- The test harness no longer renders a router. `next/navigation` and `next/link` are mocked against one mutable route, and `mount()` picks the page component the way the `app/` folder would.
+- Nothing about the appearance changed — the styling layer ported across untouched. The redesign is a separate piece of work.
 
 ## Testing
 
@@ -341,13 +350,15 @@
 
 ## Project layout
 
-- `src/App.jsx` — the whole application: providers, both routes, and every component.
+- `app/layout.jsx` — document chrome and global CSS.
+- `app/providers.jsx` — the client provider stack.
+- `app/page.jsx`, `app/company/[id]/page.jsx` — the two routes.
+- `app/globals.css`, `app/App.css` — Tailwind entry and the motion layer.
+- `src/App.jsx` — every component, exported for the route files to render.
 - `src/App.test.jsx` — the consolidated test suite.
 - `src/setupTests.js` — test setup: jest-dom matchers, storage shim, per-test reset.
 - `src/queryClient.js` — the shared TanStack QueryClient, in its own module so Fast Refresh keeps working.
 - `vitest.config.js` — Vitest config, kept separate from the app build.
-- `src/App.css` — the card and motion layer described above.
-- `src/index.css` — Tailwind import, body reset, Inter font stack.
-- `src/main.jsx` — React root.
-- `tailwind.config.js` — Tailwind v4 config.
-- `vite.config.js` — Vite config with the React and Tailwind plugins.
+- `next.config.mjs` — Next config.
+- `postcss.config.mjs` — Tailwind v4 through PostCSS.
+- `vitest.config.js` — Vitest config, separate from the app build.

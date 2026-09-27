@@ -1,15 +1,19 @@
+'use client'
+
+// Every screen here reads and writes localStorage and is driven by user interaction,
+// so the whole module is a client component. Routing comes from Next: the file tree
+// under app/ owns the URLs, and this module only consumes the current route.
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom'
+import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query'
-import { queryClient } from './queryClient'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ThemeProvider, createTheme, CssBaseline, Typography, Chip, TextField, MenuItem, Alert, InputAdornment, Button, Divider } from '@mui/material'
 import { Add as AddIconMUI } from '@mui/icons-material'
 import { IconSun, IconMoon, IconSparkles, IconBriefcase, IconLink, IconFileText, IconArrowLeft, IconSearch, IconPlus, IconCheck, IconX, IconTrash, IconUpload, IconDownload, IconAlertCircle, IconStar, IconColumns, IconLayoutList, IconBuilding, IconClipboardCheck, IconTag, IconExternalLink, IconCirclePlus, IconChevronDown } from '@tabler/icons-react'
-import './App.css'
 
 const STORAGE_KEY = 'job-tracker-data'
 const MAX_FILE_SIZE = 2 * 1024 * 1024
@@ -585,7 +589,7 @@ function initialThemeMode() {
 // Owns the mode, mirrors it onto <html class="dark"> for Tailwind's dark: variant and
 // onto App.css's own .dark rules, and persists the choice.
 // Example: toggleMode() from 'light' -> <html class="dark"> and THEME_KEY = 'dark'.
-function ThemeModeProvider({ children }) {
+export function ThemeModeProvider({ children }) {
   const [mode, setMode] = React.useState(initialThemeMode)
 
   React.useEffect(() => {
@@ -627,7 +631,7 @@ function ToastContainer({ toasts, onDismiss }) {
   )
 }
 
-function ToastProvider({ children }) {
+export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const counterRef = useRef(0)
   const showToast = useCallback((message, type = 'success') => {
@@ -724,7 +728,7 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
   }
 
   return (
-    <Link to={`/company/${company.id}`} className="card-link block">
+    <Link href={`/company/${company.id}`} className="card-link block">
       <motion.div layout variants={cardVariants} initial="hidden" animate="visible" whileHover="hover" transition={{ duration: 0.3 }} className={`w-full ${styleClasses[cardStyle] || styleClasses.compact}`}>
         {cardStyle === 'detailed' && (
           <>
@@ -803,7 +807,7 @@ function CompanyCard({ company, onRemove, onEdit, cardStyle, index }) {
   )
 }
 
-function HomePage() {
+export function HomePage() {
   const { companies, setCompanies } = useCompanies()
   const [query, setQuery] = useState('')
   const [cardStyle, setCardStyle] = useState('compact')
@@ -1734,9 +1738,9 @@ function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleK
   )
 }
 
-function CompanyPage() {
+export function CompanyPage() {
   const { id } = useParams()
-  const navigate = useNavigate()
+  const router = useRouter()
   const { companies, setCompanies } = useCompanies()
   const { showToast } = useToast()
   const company = companies.find((c) => c.id === id)
@@ -1795,7 +1799,7 @@ function CompanyPage() {
     <div className="text-center py-20">
       <Icon name="alertCircle" size="64" color="#d1d5db" />
       <p className="text-xl text-gray-400 dark:text-gray-500 mt-4">Company not found</p>
-      <button onClick={() => navigate(-1)} className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all flex items-center gap-2"><Icon name="arrowLeft" size="16" /> Go Back</button>
+      <button onClick={() => router.back()} className="mt-4 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-all flex items-center gap-2"><Icon name="arrowLeft" size="16" /> Go Back</button>
     </div>
   )
 
@@ -1940,7 +1944,7 @@ function CompanyPage() {
 
   return (
     <div className="min-h-screen workspace-bg py-6 px-4">
-      <button onClick={() => navigate(-1)} className="mb-6 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-300 transition-all flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"><Icon name="arrowLeft" size="16" /> Back</button>
+      <button onClick={() => router.back()} className="mb-6 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-purple-300 transition-all flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-200"><Icon name="arrowLeft" size="16" /> Back</button>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className="flex justify-between items-center mb-6 flex-wrap gap-2">
         <h1 className="text-2xl font-bold flex items-center gap-2"><Icon name="briefcase" size="24" /> {company.name}</h1>
@@ -2146,19 +2150,5 @@ function CompanyPage() {
   )
 }
 
-export default function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeModeProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/company/:id" element={<CompanyPage />} />
-            </Routes>
-          </BrowserRouter>
-        </ToastProvider>
-      </ThemeModeProvider>
-    </QueryClientProvider>
-  )
-}
+// The provider stack and routes that used to live here now sit in app/layout.jsx,
+// app/providers.jsx and the app/ route files, which is how Next expresses them.

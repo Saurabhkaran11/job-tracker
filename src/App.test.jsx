@@ -15,8 +15,39 @@ import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor, cleanup, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import App from './App'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { HomePage, CompanyPage, ThemeModeProvider, ToastProvider } from './App'
 import { queryClient } from './queryClient'
+
+/**
+ * Next owns routing now, so there is no router to render around the app. The two
+ * hooks the pages consume are mocked against a single mutable route, and mount()
+ * picks the page component the way the app/ folder would.
+ * Example: mount('/company/c1') -> route.id = 'c1', renders <CompanyPage />
+ */
+const route = { id: null }
+const routerBack = vi.fn()
+
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ id: route.id }),
+  useRouter: () => ({ back: routerBack, push: vi.fn(), replace: vi.fn() }),
+  usePathname: () => (route.id ? `/company/${route.id}` : '/'),
+}))
+
+// next/link renders an anchor; the test double also records any click that reaches it
+// with its default intact, which is how "this control must not navigate" is asserted.
+const navigations = []
+vi.mock('next/link', () => ({
+  default: ({ href, children, ...rest }) => (
+    <a
+      href={href}
+      onClick={(e) => { e.preventDefault(); navigations.push(href) }}
+      {...rest}
+    >
+      {children}
+    </a>
+  ),
+}))
 
 const STORAGE_KEY = 'job-tracker-data'
 
@@ -58,9 +89,24 @@ const company = (over = {}) => ({
  * first render shows an empty list and every assertion races it.
  * Example: await mount('/company/c1')
  */
+function AppUnderTest({ path }) {
+  const isCompany = path.startsWith('/company/')
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeModeProvider>
+        <ToastProvider>
+          {isCompany ? <CompanyPage /> : <HomePage />}
+        </ToastProvider>
+      </ThemeModeProvider>
+    </QueryClientProvider>
+  )
+}
+
 async function mount(path = '/') {
+  route.id = path.startsWith('/company/') ? path.slice('/company/'.length) : null
+  navigations.length = 0
   window.history.pushState({}, '', path)
-  const result = render(<App />)
+  const result = render(<AppUnderTest path={path} />)
   await waitFor(() => expect(queryClient.getQueryData(['companies'])).toBeDefined())
   return result
 }
@@ -189,7 +235,7 @@ describe('dashboard — deleting companies', () => {
     seed([company({ id: 'c1', name: 'Anthropic' })])
     await mount('/')
     await user.click(screen.getByRole('button', { name: 'Remove Anthropic' }))
-    expect(window.location.pathname).toBe('/')
+    expect(navigations).toHaveLength(0)
   })
 })
 

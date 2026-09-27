@@ -20,7 +20,9 @@ body {
   color: #e5e7eb;
 }
 
-#root {
+/* Vite mounted the app into #root; under Next the page is a direct child of body, so
+   the sizing moves here. */
+body > div:first-of-type {
   width: 100%;
   min-height: 100svh;
 }
