@@ -13,7 +13,7 @@
  */
 import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, cleanup, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import { queryClient } from './queryClient'
@@ -33,6 +33,14 @@ const seed = (companies) => localStorage.setItem(STORAGE_KEY, JSON.stringify(com
  */
 const fieldsOf = (c, roleIndex = 0) => c?.roles?.[roleIndex]?.customFields ?? c?.customFields ?? {}
 const rolesOf = (c) => c?.roles ?? []
+
+/**
+ * The roles section has two presentations. In the rail every role is a visible row, so
+ * role assertions read directly; in the toolbar they live behind a dropdown. Tests
+ * about roles themselves use the rail; the toolbar has its own block below.
+ * Example: useRail(); await mount('/company/c1')
+ */
+const useRail = () => localStorage.setItem('job-tracker-roles-layout', 'rail')
 /** Links and the resume also live on a role now, with legacy records migrated on read. */
 const linksOf = (c, roleIndex = 0) => c?.roles?.[roleIndex]?.links ?? c?.links ?? []
 const resumeOf = (c, roleIndex = 0) => c?.roles?.[roleIndex]?.resume ?? c?.resume ?? null
@@ -804,13 +812,11 @@ describe('resume upload', () => {
 describe('several roles at the same company', () => {
   const roleStrip = () => screen.getByTestId('role-strip')
   const roleNames = () =>
-    [...roleStrip().querySelectorAll('button')]
-      .map((b) => b.textContent.trim())
-      .filter((t) => t && t !== 'Add role')
+    [...roleStrip().querySelectorAll('[data-role-chip]')].map((el) => el.getAttribute('data-role-chip'))
 
   it('gives a legacy company one migrated role', async () => {
     seed([{ id: 'c1', name: 'Anthropic', links: [], resume: null, customFields: { Recruiter: 'Sam', Role: 'Product Engineer' } }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     expect(roleNames()).toEqual(['Product Engineer'])
     expect(tabNames()).toContain('Recruiter')
@@ -818,7 +824,7 @@ describe('several roles at the same company', () => {
 
   it('names a role-less legacy company sensibly', async () => {
     seed([{ id: 'c1', name: 'Anthropic', links: [], resume: null, customFields: {} }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     expect(roleNames()).toEqual(['General application'])
   })
@@ -826,7 +832,7 @@ describe('several roles at the same company', () => {
   it('adds a second role', async () => {
     const user = userEvent.setup()
     seed([company({ id: 'c1' })])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await user.click(screen.getByRole('button', { name: /add role/i }))
     await user.type(await screen.findByPlaceholderText(/role title/i), 'Research Engineer{Enter}')
@@ -843,14 +849,14 @@ describe('several roles at the same company', () => {
         { id: 'r2', title: 'Research Engineer', customFields: { Recruiter: 'Dana Whitfield' } },
       ],
     }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
 
     await openTab(user, 'Recruiter')
     await waitFor(() => expect(panel().querySelector('input')).toBeTruthy())
     expect(panel().querySelector('input').value).toBe('Sam Okafor')
 
-    await user.click([...roleStrip().querySelectorAll('button')].find((b) => b.textContent.trim() === 'Research Engineer'))
+    await user.click(roleStrip().querySelector('[data-role-chip="Research Engineer"]').querySelector('button'))
     await openTab(user, 'Recruiter')
     await waitFor(() => expect(panel().querySelector('input')?.value).toBe('Dana Whitfield'))
 
@@ -868,9 +874,9 @@ describe('several roles at the same company', () => {
         { id: 'r2', title: 'Role B', customFields: {} },
       ],
     }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
-    await user.click([...roleStrip().querySelectorAll('button')].find((b) => b.textContent.trim() === 'Role B'))
+    await user.click(roleStrip().querySelector('[data-role-chip="Role B"]').querySelector('button'))
     await openTab(user, 'Add Custom')
     await waitFor(() => expect(panel().textContent).toMatch(/Quick add/i))
     await user.click([...panel().querySelectorAll('button')].find((b) => b.textContent.trim() === 'Salary'))
@@ -881,7 +887,7 @@ describe('several roles at the same company', () => {
   it('rejects a duplicate role title', async () => {
     const user = userEvent.setup()
     seed([{ id: 'c1', name: 'Anthropic', links: [], resume: null, roles: [{ id: 'r1', title: 'Product Engineer', customFields: {} }] }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await user.click(screen.getByRole('button', { name: /add role/i }))
     await user.type(await screen.findByPlaceholderText(/role title/i), 'product engineer{Enter}')
@@ -899,7 +905,7 @@ describe('several roles at the same company', () => {
         { id: 'r2', title: 'Role B', customFields: {} },
       ],
     }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await user.click(screen.getByRole('button', { name: /remove role role b/i }))
     await waitFor(() => expect(rolesOf(stored()[0])).toHaveLength(1))
@@ -907,7 +913,7 @@ describe('several roles at the same company', () => {
 
   it('never lets the last role be removed', async () => {
     seed([company({ id: 'c1' })])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     expect(screen.queryByRole('button', { name: /remove role/i })).toBeNull()
   })
@@ -945,7 +951,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   const viewBtn = (label) =>
     [...viewStrip().querySelectorAll('button')].find((b) => b.textContent.trim() === label)
   const pickRole = async (user, title) =>
-    user.click([...roleStrip().querySelectorAll('button')].find((b) => b.textContent.trim() === title))
+    user.click(roleStrip().querySelector(`[data-role-chip="${title}"]`).querySelector('button'))
 
   const twoRoles = () => ([{
     id: 'c1', name: 'Anthropic',
@@ -957,14 +963,14 @@ describe('a saved view per role, plus an all-roles comparison', () => {
 
   it('offers the three layouts', async () => {
     seed([company({ id: 'c1' })])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     for (const v of ['Compact', 'Detailed', 'Table']) expect(viewBtn(v), v).toBeTruthy()
   })
 
   it('starts compact, with the sub-tab strip showing', async () => {
     seed([company({ id: 'c1' })])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     expect(viewBtn('Compact')).toHaveAttribute('aria-pressed', 'true')
     expect(tabStrip()).toBeTruthy()
@@ -973,7 +979,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('drops the sub-tabs in the detailed layout and shows every section at once', async () => {
     const user = userEvent.setup()
     seed([company({ id: 'c1', links: [{ id: 'l1', label: 'Careers', url: 'https://x.com' }] })])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('Detailed'))
     await waitFor(() => expect(document.querySelector('.tab-nav')).toBeNull())
@@ -985,7 +991,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('lists every toggle as a row in the table layout', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('Table'))
     await waitFor(() => expect(panel().textContent).toContain('Recruiter'))
@@ -996,7 +1002,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('saves the layout on the role', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('Table'))
     await waitFor(() => expect(rolesOf(stored()[0])[0].view).toBe('table'))
@@ -1006,7 +1012,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('gives each role its own layout — the point of the feature', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
 
     await user.click(viewBtn('Table'))
@@ -1025,20 +1031,20 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('remembers the layout across a reload', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('Table'))
     await waitFor(() => expect(rolesOf(stored()[0])[0].view).toBe('table'))
 
     cleanup()
     queryClient.clear()
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewBtn('Table')).toHaveAttribute('aria-pressed', 'true'))
   })
 
   it('offers All roles only when there is more than one', async () => {
     seed([company({ id: 'c1' })])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     expect(viewBtn('All roles')).toBeFalsy()
   })
@@ -1046,7 +1052,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('compares every role side by side', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('All roles'))
     await waitFor(() => expect(panel().querySelector('table')).toBeTruthy())
@@ -1071,7 +1077,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
         { id: 'r2', title: 'B', links: [], resume: null, customFields: {}, view: 'compact' },
       ],
     }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('All roles'))
     await waitFor(() => expect(panel().querySelector('table')).toBeTruthy())
@@ -1082,7 +1088,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('leaves comparison mode when a layout is picked', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('All roles'))
     await waitFor(() => expect(panel().querySelector('table')).toBeTruthy())
@@ -1094,7 +1100,7 @@ describe('a saved view per role, plus an all-roles comparison', () => {
   it('still edits a toggle from the table layout', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(viewStrip()).toBeTruthy())
     await user.click(viewBtn('Table'))
     await waitFor(() => expect(panel().textContent).toContain('Recruiter'))
@@ -1102,6 +1108,126 @@ describe('a saved view per role, plus an all-roles comparison', () => {
     await user.clear(box)
     await user.type(box, 'Jo Bell')
     await waitFor(() => expect(fieldsOf(stored()[0], 0).Recruiter).toBe('Jo Bell'))
+  })
+})
+
+// ---------------------------------------------------------------------------
+describe('the roles section has two layouts', () => {
+  const layoutToggle = () => screen.getByTestId('roles-layout-toggle')
+  const layoutBtn = (name) => within(layoutToggle()).getByRole('button', { name: new RegExp(`roles as ${name}`, 'i') })
+  const roleStrip = () => screen.getByTestId('role-strip')
+
+  const twoRoles = () => ([{
+    id: 'c1', name: 'Anthropic',
+    roles: [
+      { id: 'r1', title: 'Product Engineer', links: [{ id: 'l1', url: 'https://a.com' }], resume: null, customFields: { Status: 'Offer' }, view: 'compact' },
+      { id: 'r2', title: 'Research Engineer', links: [], resume: null, customFields: { Status: 'Phone Screen' }, view: 'compact' },
+    ],
+  }])
+
+  it('defaults to the toolbar layout', async () => {
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(layoutToggle()).toBeTruthy())
+    expect(layoutBtn('toolbar')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('shows the current role and its stage in the toolbar picker', async () => {
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(roleStrip()).toBeTruthy())
+    expect(roleStrip().textContent).toContain('Product Engineer')
+    expect(roleStrip().textContent).toContain('Offer')
+  })
+
+  it('keeps every role out of the way until the picker is opened', async () => {
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(roleStrip()).toBeTruthy())
+    expect(roleStrip().textContent).not.toContain('Research Engineer')
+  })
+
+  it('switches role from the toolbar picker', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(roleStrip()).toBeTruthy())
+    await user.click(within(roleStrip()).getByRole('combobox'))
+    await user.click(await screen.findByRole('option', { name: /Research Engineer/ }))
+    await waitFor(() => expect(roleStrip().textContent).toContain('Research Engineer'))
+    expect(roleStrip().textContent).toContain('Phone Screen')
+  })
+
+  it('switches to the rail, which shows every role at once', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(layoutToggle()).toBeTruthy())
+    await user.click(layoutBtn('rail'))
+    await waitFor(() => expect(roleStrip().querySelectorAll('[data-role-chip]')).toHaveLength(2))
+    expect(roleStrip().textContent).toContain('Product Engineer')
+    expect(roleStrip().textContent).toContain('Research Engineer')
+  })
+
+  it('shows each role\u2019s stage and link count in the rail', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(layoutToggle()).toBeTruthy())
+    await user.click(layoutBtn('rail'))
+    await waitFor(() => expect(roleStrip().querySelectorAll('[data-role-chip]')).toHaveLength(2))
+    expect(roleStrip().textContent).toContain('Offer')
+    expect(roleStrip().textContent).toContain('1 link')
+  })
+
+  it('remembers the chosen layout', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(layoutToggle()).toBeTruthy())
+    await user.click(layoutBtn('rail'))
+    await waitFor(() => expect(localStorage.getItem('job-tracker-roles-layout')).toBe('rail'))
+
+    cleanup()
+    queryClient.clear()
+    await mount('/company/c1')
+    await waitFor(() => expect(layoutBtn('rail')).toHaveAttribute('aria-pressed', 'true'))
+    expect(roleStrip().querySelectorAll('[data-role-chip]')).toHaveLength(2)
+  })
+
+  it('keeps the view control available in both layouts', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(screen.getByTestId('view-strip')).toBeTruthy())
+    await user.click(layoutBtn('rail'))
+    await waitFor(() => expect(layoutBtn('rail')).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.getByTestId('view-strip')).toBeTruthy()
+  })
+
+  it('renders the same page body in both layouts', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(panel().textContent).toMatch(/Add Link/i))
+    await user.click(layoutBtn('rail'))
+    await waitFor(() => expect(layoutBtn('rail')).toHaveAttribute('aria-pressed', 'true'))
+    expect(panel().textContent).toMatch(/Add Link/i)
+  })
+
+  it('reorders from the toolbar picker as well', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/company/c1')
+    await waitFor(() => expect(roleStrip()).toBeTruthy())
+    await user.click(within(roleStrip()).getByRole('combobox'))
+    await screen.findByRole('option', { name: /Research Engineer/ })
+    const items = [...document.querySelectorAll('[data-role-chip]')]
+    const dataTransfer = { effectAllowed: '', dropEffect: '', setData() {}, getData() { return '' } }
+    fireEvent.dragStart(items[1], { dataTransfer })
+    fireEvent.dragOver(items[0], { dataTransfer })
+    fireEvent.drop(items[0], { dataTransfer })
+    await waitFor(() => expect(rolesOf(stored()[0]).map((r) => r.title)).toEqual(['Research Engineer', 'Product Engineer']))
   })
 })
 
@@ -1132,14 +1258,14 @@ describe('reordering roles', () => {
 
   it('marks the chips draggable when there is more than one role', async () => {
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     expect(chip('Alpha')).toHaveAttribute('draggable', 'true')
   })
 
   it('moves a role forward by dragging', async () => {
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     drag('Alpha', 'Gamma')
     await waitFor(() => expect(order()).toEqual(['Beta', 'Gamma', 'Alpha']))
@@ -1147,7 +1273,7 @@ describe('reordering roles', () => {
 
   it('moves a role backward by dragging', async () => {
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     drag('Gamma', 'Alpha')
     await waitFor(() => expect(order()).toEqual(['Gamma', 'Alpha', 'Beta']))
@@ -1155,7 +1281,7 @@ describe('reordering roles', () => {
 
   it('repaints the strip in the new order', async () => {
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     drag('Gamma', 'Alpha')
     await waitFor(() => expect(onScreenOrder()).toEqual(['Gamma', 'Alpha', 'Beta']))
@@ -1163,7 +1289,7 @@ describe('reordering roles', () => {
 
   it('writes nothing when a role is dropped where it started', async () => {
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     drag('Beta', 'Beta')
     await waitFor(() => expect(order()).toEqual(['Alpha', 'Beta', 'Gamma']))
@@ -1177,7 +1303,7 @@ describe('reordering roles', () => {
         { id: 'r2', title: 'Beta', links: [], resume: null, customFields: { Recruiter: 'Dana' }, view: 'table' },
       ],
     }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     drag('Alpha', 'Beta')
     await waitFor(() => expect(order()).toEqual(['Beta', 'Alpha']))
@@ -1189,7 +1315,7 @@ describe('reordering roles', () => {
   it('moves a role with Alt and the arrow keys', async () => {
     const user = userEvent.setup()
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     const betaBtn = chip('Beta').querySelector('button')
     betaBtn.focus()
@@ -1203,7 +1329,7 @@ describe('reordering roles', () => {
   it('will not move the first role left or the last one right', async () => {
     const user = userEvent.setup()
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     chip('Alpha').querySelector('button').focus()
     await user.keyboard('{Alt>}{ArrowLeft}{/Alt}')
@@ -1216,7 +1342,7 @@ describe('reordering roles', () => {
   it('reorders the comparison columns to match', async () => {
     const user = userEvent.setup()
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     drag('Gamma', 'Alpha')
     await waitFor(() => expect(order()).toEqual(['Gamma', 'Alpha', 'Beta']))
@@ -1229,14 +1355,174 @@ describe('reordering roles', () => {
 
   it('survives a reload', async () => {
     seed(threeRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     drag('Gamma', 'Alpha')
     await waitFor(() => expect(order()).toEqual(['Gamma', 'Alpha', 'Beta']))
     cleanup()
     queryClient.clear()
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(onScreenOrder()).toEqual(['Gamma', 'Alpha', 'Beta']))
+  })
+})
+
+// ---------------------------------------------------------------------------
+describe('the table view', () => {
+  const viewStrip = () => screen.getByTestId('view-strip')
+  const openTable = async (user) => {
+    await user.click([...viewStrip().querySelectorAll('button')].find((b) => b.textContent.trim() === 'Table'))
+    await waitFor(() => expect(screen.getByTestId('table-view')).toBeTruthy())
+  }
+  const table = () => screen.getByTestId('table-view')
+
+  const seedRole = (over = {}) => seed([{
+    id: 'c1', name: 'Anthropic',
+    roles: [{
+      id: 'r1', title: 'Product Engineer', view: 'compact',
+      links: [{ id: 'l1', label: 'Careers', url: 'https://example.com/careers' }],
+      resume: null,
+      customFields: { Status: 'Offer', Recruiter: 'Sam Okafor' },
+      ...over,
+    }],
+  }])
+
+  it('is a real table with a header', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    const headers = [...table().querySelectorAll('th')].map((t) => t.textContent.trim())
+    expect(headers).toEqual(['Field', 'Value'])
+  })
+
+  it('gives every toggle its own row', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    const fields = [...table().querySelectorAll('tbody tr td:first-child')].map((t) => t.textContent.trim())
+    expect(fields).toEqual(['Status', 'Recruiter'])
+  })
+
+  it('edits a toggle in place', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    const box = [...table().querySelectorAll('input')].find((i) => i.value === 'Sam Okafor')
+    await user.clear(box)
+    await user.type(box, 'Jo Bell')
+    await waitFor(() => expect(fieldsOf(stored()[0]).Recruiter).toBe('Jo Bell'))
+  })
+
+  it('adds a missing field without leaving the view', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    await user.click(within(table()).getByRole('button', { name: '+ Salary' }))
+    await waitFor(() => expect(fieldsOf(stored()[0])).toHaveProperty('Salary'))
+  })
+
+  it('tells an empty role how to fill itself, rather than pointing elsewhere', async () => {
+    const user = userEvent.setup()
+    seedRole({ customFields: {} })
+    await mount('/company/c1')
+    await openTable(user)
+    expect(table().textContent).toMatch(/add one below/i)
+    expect(table().textContent).not.toMatch(/switch to compact/i)
+  })
+
+  it('lists the role\u2019s links with a count', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    expect(table().textContent).toContain('Links (1)')
+    expect(table().textContent).toContain('Careers')
+  })
+
+  it('adds a link from the table', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    await user.type(within(table()).getByPlaceholderText('Label'), 'Referral')
+    await user.type(within(table()).getByPlaceholderText('https://...'), 'https://example.com/ref')
+    await user.click(within(table()).getByRole('button', { name: /add link/i }))
+    await waitFor(() => expect(linksOf(stored()[0])).toHaveLength(2))
+    expect(linksOf(stored()[0])[1]).toMatchObject({ label: 'Referral', url: 'https://example.com/ref' })
+  })
+
+  it('prefixes a bare domain', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    await user.type(within(table()).getByPlaceholderText('https://...'), 'example.com/x')
+    await user.click(within(table()).getByRole('button', { name: /add link/i }))
+    await waitFor(() => expect(linksOf(stored()[0])[1].url).toBe('https://example.com/x'))
+  })
+
+  it('rejects an invalid URL and adds nothing', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    await user.type(within(table()).getByPlaceholderText('https://...'), 'not a url')
+    await user.click(within(table()).getByRole('button', { name: /add link/i }))
+    expect(await screen.findByText(/invalid url/i)).toBeInTheDocument()
+    expect(linksOf(stored()[0])).toHaveLength(1)
+  })
+
+  it('requires a URL', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    await user.click(within(table()).getByRole('button', { name: /add link/i }))
+    expect(await screen.findByText(/enter a url/i)).toBeInTheDocument()
+    expect(linksOf(stored()[0])).toHaveLength(1)
+  })
+
+  it('removes a link from the table', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    await user.click(within(table()).getByRole('button', { name: /remove link careers/i }))
+    await waitFor(() => expect(linksOf(stored()[0])).toHaveLength(0))
+  })
+
+  it('offers the resume here too, which it did not before', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    expect(table().textContent).toContain('Resume')
+    const input = table().querySelector('input[type="file"]')
+    expect(input).toBeTruthy()
+    expect(input.closest('button')).toBeNull()
+  })
+
+  it('uploads a resume from the table', async () => {
+    const user = userEvent.setup()
+    seedRole()
+    await mount('/company/c1')
+    await openTable(user)
+    await user.upload(table().querySelector('input[type="file"]'), new File(['cv'], 'table-cv.pdf', { type: 'application/pdf' }))
+    await waitFor(() => expect(resumeOf(stored()[0])).toBeTruthy())
+    expect(resumeOf(stored()[0]).name).toBe('table-cv.pdf')
+  })
+
+  it('shows an attached resume with remove', async () => {
+    const user = userEvent.setup()
+    seedRole({ resume: { name: 'cv.pdf', dataUrl: 'data:application/pdf;base64,AA==' } })
+    await mount('/company/c1')
+    await openTable(user)
+    expect(table().textContent).toContain('cv.pdf')
+    await user.click(within(table()).getByRole('button', { name: /remove resume/i }))
+    await waitFor(() => expect(resumeOf(stored()[0])).toBeNull())
   })
 })
 
@@ -1244,7 +1530,7 @@ describe('reordering roles', () => {
 describe('links and resume are per role', () => {
   const roleStrip = () => screen.getByTestId('role-strip')
   const pickRole = async (user, title) =>
-    user.click([...roleStrip().querySelectorAll('button')].find((b) => b.textContent.trim() === title))
+    user.click(roleStrip().querySelector(`[data-role-chip="${title}"]`).querySelector('button'))
 
   const twoRoles = () => ([{
     id: 'c1', name: 'Anthropic',
@@ -1256,7 +1542,7 @@ describe('links and resume are per role', () => {
 
   it('migrates legacy company-level links onto the first role', async () => {
     seed([{ id: 'c1', name: 'Anthropic', links: [{ id: 'l1', label: 'Careers', url: 'https://x.com' }], resume: { name: 'cv.pdf' }, customFields: {} }])
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     expect(panel().textContent).toContain('Careers')
   })
@@ -1264,7 +1550,7 @@ describe('links and resume are per role', () => {
   it('shows only the selected role\u2019s links', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await waitFor(() => expect(panel().textContent).toContain('A posting'))
     await pickRole(user, 'Role B')
@@ -1274,7 +1560,7 @@ describe('links and resume are per role', () => {
   it('adds a link to the selected role only', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await pickRole(user, 'Role B')
     await waitFor(() => expect(screen.getByLabelText(/job title/i)).toBeInTheDocument())
@@ -1289,7 +1575,7 @@ describe('links and resume are per role', () => {
   it('keeps a separate resume per role', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
-    await mount('/company/c1')
+    useRail(); await mount('/company/c1')
     await waitFor(() => expect(roleStrip()).toBeTruthy())
     await pickRole(user, 'Role B')
     await openTab(user, 'Resume')

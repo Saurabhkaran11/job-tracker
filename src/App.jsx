@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react'
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Link, useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm, Controller } from 'react-hook-form'
@@ -1388,40 +1388,145 @@ function RoleDetailedView({ index, role, addLink, editingLink, setEditingLink, e
   )
 }
 
-// The dense layout: every toggle as a row, still editable, with the role's links
-// underneath. Good for scanning or correcting several fields quickly.
-// Example: <RoleTableView role={activeRole} updateCustomField={fn} />
-function RoleTableView({ role, customFields, customNames, updateCustomField }) {
+// Module scope, not inside the view: a component created during render is a new type
+// on every render, which remounts its subtree and drops focus out of any field inside.
+// Example: <TableCard><table …/></TableCard>
+function TableCard({ children }) {
+  return <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">{children}</div>
+}
+
+// The dense layout. Everything about the role on one scannable screen: its toggles as
+// a real two-column table, its links, and its resume -- all editable in place.
+//
+// The earlier version was a table in name only. It stacked full-height form controls
+// with no header, which made it the LEAST dense of the three views; its links were
+// read-only, it had no resume section at all, and its empty state told you to go and
+// use a different view. Each of those is handled here, so the view is self-sufficient.
+// Example: <RoleTableView role={activeRole} … /> renders Field/Value rows, a quick-add
+//          row for missing presets, the links list with add and remove, and the CV.
+function RoleTableView({
+  role, customFields, customNames, updateCustomField, addCustomFieldNamed,
+  addLink, removeLink, setResume, handleDownload, handleFileChange, fileError,
+}) {
+  const [label, setLabel] = useState('')
+  const [url, setUrl] = useState('')
+  const [linkError, setLinkError] = useState('')
+
+  const availablePresets = PRESET_TOGGLES.filter((t) => customFields[t.name] === undefined)
+
+  // Validated here rather than leaning on the caller, because addLink() only prefixes
+  // the scheme -- it does not reject a non-URL.
+  // Example: 'not a url' -> inline error, nothing added.
+  const submitLink = (e) => {
+    e.preventDefault()
+    const raw = url.trim()
+    if (!raw) { setLinkError('Enter a URL'); return }
+    const full = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`
+    if (!linkSchema.safeParse({ label, url: full }).success) { setLinkError('Invalid URL'); return }
+    addLink({ url: full, label })
+    setLabel(''); setUrl(''); setLinkError('')
+  }
+
   return (
-    <div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-6">
-        {customNames.length === 0 ? (
-          <div className="px-4 py-6 text-sm text-gray-400 dark:text-gray-500 text-center">
-            No toggles on this role yet — switch to Compact or Detailed to add some.
-          </div>
-        ) : customNames.map((cn) => (
-          <div key={cn} className="grid grid-cols-12 gap-3 px-4 py-2.5 border-b border-gray-50 dark:border-gray-700 items-center last:border-b-0">
-            <div className="col-span-4 text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{cn}</div>
-            <div className="col-span-8">
-              <CustomFieldInput name={cn} value={customFields[cn]} onChange={(v) => updateCustomField(cn, v)} />
+    <div data-testid="table-view">
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden mb-4">
+        <table className="w-full text-sm" style={{ tableLayout: 'fixed' }}>
+          <thead>
+            <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-100 dark:border-gray-700">
+              <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[34%]">Field</th>
+              <th className="text-left px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customNames.length === 0 ? (
+              <tr>
+                <td colSpan={2} className="px-4 py-5 text-sm text-gray-400 dark:text-gray-500 text-center">
+                  No toggles on this role yet — add one below.
+                </td>
+              </tr>
+            ) : customNames.map((cn) => (
+              <tr key={cn} className="border-b border-gray-50 dark:border-gray-700 last:border-b-0 align-middle">
+                <td className="px-4 py-1.5 font-medium text-gray-700 dark:text-gray-200 truncate">{cn}</td>
+                <td className="px-4 py-1.5">
+                  <CustomFieldInput name={cn} value={customFields[cn]} onChange={(v) => updateCustomField(cn, v)} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {/* The old empty state pointed at another view, which made this one a dead end.
+            Missing presets are addable right here instead. */}
+        {availablePresets.length > 0 && (
+          <div className="px-4 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <Typography variant="caption" className="text-gray-500 dark:text-gray-400 block mb-2">Add a field</Typography>
+            <div className="flex flex-wrap gap-1.5">
+              {availablePresets.map((t) => (
+                <button
+                  key={t.name}
+                  type="button"
+                  onClick={() => addCustomFieldNamed(t.name)}
+                  className="px-2.5 py-1 bg-white dark:bg-gray-800 border border-purple-200 dark:border-purple-500/40 rounded-full text-xs text-purple-600 dark:text-purple-300 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all"
+                >
+                  + {t.name}
+                </button>
+              ))}
             </div>
           </div>
-        ))}
+        )}
       </div>
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+
+      <TableCard>
+        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
           Links ({role.links.length})
         </div>
+        <form onSubmit={submitLink} className="flex flex-wrap items-start gap-2 px-4 py-3 border-b border-gray-50 dark:border-gray-700">
+          <TextField size="small" placeholder="Label" value={label} onChange={(e) => setLabel(e.target.value)} className="flex-1 min-w-[120px]" />
+          <TextField
+            size="small" placeholder="https://..." value={url}
+            onChange={(e) => { setUrl(e.target.value); setLinkError('') }}
+            error={!!linkError} helperText={linkError || undefined}
+            className="flex-[2] min-w-[160px]"
+          />
+          <button type="submit" className="px-3 py-2 bg-purple-500 text-white rounded-lg text-sm hover:bg-purple-600 transition-all whitespace-nowrap">
+            Add link
+          </button>
+        </form>
         {role.links.length === 0 ? (
-          <div className="px-4 py-4 text-sm text-gray-400 dark:text-gray-500">No links on this role yet.</div>
+          <div className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No links on this role yet.</div>
         ) : role.links.map((l) => (
-          <div key={l.id} className="px-4 py-2.5 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
-            <a href={l.url} target="_blank" rel="noreferrer" className="text-sm text-purple-600 hover:underline break-all">
+          <div key={l.id} className="flex items-center gap-2 px-4 py-2 border-b border-gray-50 dark:border-gray-700 last:border-b-0">
+            <a href={l.url} target="_blank" rel="noreferrer" className="flex-1 min-w-0 text-sm text-purple-600 hover:underline truncate">
               {l.label || l.url}
             </a>
+            <button type="button" onClick={() => removeLink(l.id)} aria-label={`Remove link ${l.label || l.url}`} className="text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors shrink-0">
+              <Icon name="trash" size="16" />
+            </button>
           </div>
         ))}
-      </div>
+      </TableCard>
+
+      <TableCard>
+        <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-100 dark:border-gray-700">
+          Resume
+        </div>
+        <div className="px-4 py-3">
+          {role.resume ? (
+            <div className="flex items-center gap-2">
+              <Icon name="fileText" size="16" color="#ef4444" />
+              <span className="flex-1 min-w-0 text-sm truncate">{role.resume.name}</span>
+              <button type="button" onClick={handleDownload} className="px-2 py-1 text-sm text-gray-500 dark:text-gray-400 hover:text-purple-600 transition-colors" aria-label="Download resume"><Icon name="download" size="16" /></button>
+              <button type="button" onClick={() => setResume(null)} className="px-2 py-1 text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors" aria-label="Remove resume"><Icon name="x" size="16" /></button>
+            </div>
+          ) : (
+            <label htmlFor="resume-upload-table" className="flex items-center justify-center gap-2 w-full py-2.5 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:border-purple-400 hover:text-purple-500 transition-all cursor-pointer">
+              <Icon name="upload" size="16" /> Upload resume
+              <input id="resume-upload-table" type="file" accept=".pdf,.doc,.docx,.txt,.md" className="sr-only" onChange={handleFileChange} />
+            </label>
+          )}
+          {fileError && <Alert severity="error" className="mt-2">{fileError}</Alert>}
+        </div>
+      </TableCard>
     </div>
   )
 }
@@ -1471,6 +1576,164 @@ function RoleComparisonView({ roles }) {
   )
 }
 
+const ROLES_LAYOUT_KEY = 'job-tracker-roles-layout'
+
+// How the roles section itself is presented. Both layouts drive the same state; this
+// only changes where the picker sits and how much of it is visible at once.
+//   toolbar - one row: role dropdown on the left, view control on the right
+//   rail    - a vertical list beside the content, every role visible at once
+// Saved like the theme, because it is a workspace preference rather than data.
+// Example: localStorage 'job-tracker-roles-layout' = 'rail'
+const ROLES_LAYOUTS = [
+  { id: 'toolbar', label: 'Toolbar', icon: 'list' },
+  { id: 'rail', label: 'Rail', icon: 'columns' },
+]
+const DEFAULT_ROLES_LAYOUT = 'toolbar'
+
+function initialRolesLayout() {
+  try {
+    const saved = localStorage.getItem(ROLES_LAYOUT_KEY)
+    if (ROLES_LAYOUTS.some((l) => l.id === saved)) return saved
+  } catch { /* storage unavailable */ }
+  return DEFAULT_ROLES_LAYOUT
+}
+
+// Segmented layout control, shared by both presentations so they cannot drift.
+// Example: <RoleViewSwitcher roles={roles} activeRole={r} … />
+function RoleViewSwitcher({ roles, activeRole, comparing, setComparing, setRoleView }) {
+  return (
+    <div className="flex items-center gap-2" data-testid="view-strip">
+      <Typography variant="caption" className="text-gray-500 dark:text-gray-400">View</Typography>
+      <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {ROLE_VIEWS.map((v) => {
+          const on = !comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === v.id
+          return (
+            <button
+              key={v.id}
+              type="button"
+              aria-pressed={on}
+              onClick={() => { setComparing(false); setRoleView(v.id) }}
+              className={`px-3 py-1.5 text-sm font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${on ? 'bg-purple-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700'}`}
+            >
+              {v.label}
+            </button>
+          )
+        })}
+        {roles.length > 1 && (
+          <button
+            type="button"
+            aria-pressed={comparing}
+            onClick={() => setComparing((c) => !c)}
+            className={`px-3 py-1.5 text-sm font-medium transition-all border-l border-gray-200 dark:border-gray-700 ${comparing ? 'bg-purple-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-gray-700'}`}
+          >
+            All roles
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Switches between the two presentations of the roles section.
+// Example: <RolesLayoutToggle layout="rail" setLayout={fn} />
+function RolesLayoutToggle({ layout, setLayout }) {
+  return (
+    <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden" data-testid="roles-layout-toggle">
+      {ROLES_LAYOUTS.map((l) => (
+        <button
+          key={l.id}
+          type="button"
+          aria-pressed={layout === l.id}
+          aria-label={`Roles as ${l.label.toLowerCase()}`}
+          onClick={() => setLayout(l.id)}
+          className={`inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-xs font-medium transition-all border-r border-gray-200 dark:border-gray-700 last:border-r-0 ${layout === l.id ? 'bg-purple-500 text-white' : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-purple-50 dark:hover:bg-gray-700'}`}
+        >
+          <Icon name={l.icon} size="14" /> {l.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// Option B: every role visible at once in a vertical list beside the content. Each row
+// carries its own stage, so the whole pipeline at an employer reads without opening
+// anything. Rows are draggable, same as the dropdown items in the toolbar layout.
+// Example: <RoleRail roles={roles} activeRole={r} … />
+function RoleRail({ roles, activeRole, setActiveRoleId, setActiveSubTab, onRoleKeyDown, removeRole, dragProps, draggingRole, showRoleInput, setShowRoleInput, newRoleTitle, setNewRoleTitle, addRole }) {
+  return (
+    <div className="w-full sm:w-56 shrink-0" data-testid="role-strip">
+      {roles.length > 1 && (
+        <span className="sr-only">Roles can be reordered by dragging, or with Alt and the arrow keys.</span>
+      )}
+      <div className="space-y-1">
+        {roles.map((r, i) => {
+          const on = r.id === activeRole?.id
+          return (
+            <div
+              key={r.id}
+              data-role-chip={r.title}
+              draggable
+              {...dragProps(i)}
+              className={`group flex items-center gap-1 rounded-lg transition-all ${draggingRole === i ? 'opacity-40' : ''} ${on ? 'bg-purple-50 dark:bg-purple-500/10' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+            >
+              {roles.length > 1 && (
+                <span className="cursor-grab select-none text-gray-300 dark:text-gray-600 pl-2" aria-hidden="true">⠿</span>
+              )}
+              <button
+                type="button"
+                onClick={() => { setActiveRoleId(r.id); setActiveSubTab('links') }}
+                onKeyDown={(e) => onRoleKeyDown(e, i)}
+                aria-pressed={on}
+                className={`flex-1 min-w-0 text-left px-2 py-2 border-l-2 transition-all ${on ? 'border-purple-500' : 'border-transparent'}`}
+              >
+                <span className={`block truncate text-sm font-medium ${on ? 'text-purple-600' : 'text-gray-700 dark:text-gray-200'}`}>{r.title}</span>
+                <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
+                  {r.customFields?.Status || 'No status'} · {r.links.length} {r.links.length === 1 ? 'link' : 'links'}
+                </span>
+              </button>
+              {roles.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeRole(r.id)}
+                  aria-label={`Remove role ${r.title}`}
+                  className="px-2 text-gray-300 dark:text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all"
+                >
+                  <Icon name="x" size="14" />
+                </button>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {!showRoleInput ? (
+        <button
+          type="button"
+          onClick={() => setShowRoleInput(true)}
+          aria-label="Add role"
+          className="mt-2 w-full px-2 py-2 rounded-lg text-sm font-medium border border-dashed border-purple-300 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex items-center justify-center gap-1.5"
+        >
+          <Icon name="plusCircle" size="16" /> Add role
+        </button>
+      ) : (
+        <div className="mt-2 space-y-2">
+          <TextField
+            size="small" fullWidth autoFocus
+            placeholder="Role title, e.g. Research Engineer"
+            value={newRoleTitle}
+            onChange={(e) => setNewRoleTitle(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addRole(newRoleTitle) } }}
+          />
+          <div className="flex gap-2">
+            <button type="button" onClick={() => addRole(newRoleTitle)} aria-label="Save role" className="flex-1 px-3 py-2 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 transition-all"><Icon name="check" size="16" /></button>
+            <button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} aria-label="Cancel role" className="flex-1 px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm transition-all"><Icon name="x" size="16" /></button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function CompanyPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -1499,6 +1762,11 @@ function CompanyPage() {
   // where being a render behind does not matter.
   const dragFromRef = useRef(null)
   const [draggingRole, setDraggingRole] = useState(null)
+  const [rolesLayout, setRolesLayout] = useState(initialRolesLayout)
+
+  useEffect(() => {
+    try { localStorage.setItem(ROLES_LAYOUT_KEY, rolesLayout) } catch { /* storage unavailable */ }
+  }, [rolesLayout])
 
   const companyIndex = companies.findIndex((c) => c.id === id)
 
@@ -1584,6 +1852,15 @@ function CompanyPage() {
   // Keyboard equivalent of the drag, because a drag alone is unusable by keyboard and
   // screen-reader users. Alt+Arrow moves the focused role one place.
   // Example: focus 'Research Engineer', press Alt+Left -> it swaps with the role before it.
+  // Shared by both presentations so a drag behaves identically in each.
+  // Example: <div draggable {...dragProps(2)} />
+  const dragProps = (i) => ({
+    onDragStart: (e) => { dragFromRef.current = i; setDraggingRole(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move' },
+    onDragOver: (e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move' },
+    onDrop: (e) => { e.preventDefault(); reorderRoles(dragFromRef.current, i); dragFromRef.current = null; setDraggingRole(null) },
+    onDragEnd: () => { dragFromRef.current = null; setDraggingRole(null) },
+  })
+
   const onRoleKeyDown = (e, index) => {
     if (!e.altKey) return
     if (e.key === 'ArrowLeft' && index > 0) { e.preventDefault(); reorderRoles(index, index - 1) }
@@ -1670,72 +1947,75 @@ function CompanyPage() {
         <Chip label={`${allLinks(company).length} ${allLinks(company).length === 1 ? 'link' : 'links'}`} color="primary" variant="outlined" />
       </motion.div>
 
-      {/* One row per application at this employer. Toggles below belong to whichever
-          role is selected, so two interviews at the same company keep separate
-          recruiters, statuses and dates instead of overwriting each other.
-          Example: 'Product Engineer' (Sam) and 'Research Engineer' (Dana) side by side. */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-4">
-        <Typography variant="caption" className="text-gray-500 dark:text-gray-400 block mb-2">
-          Roles at {company.name}
-        </Typography>
+      {/* Two presentations of the same roles state, chosen by the user and remembered.
+          Toolbar keeps the picker to one row; Rail shows every role at once beside the
+          content. Both drive the same handlers, so behaviour cannot drift between them.
+          Example: rolesLayout 'rail' -> RoleRail on the left, content on the right. */}
+      {rolesLayout === 'toolbar' && (
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-6">
         <div className="flex flex-wrap items-center gap-2" data-testid="role-strip">
           {roles.length > 1 && (
-            <span className="sr-only">Roles can be reordered by dragging, or with Alt and the arrow keys.</span>
+            <span className="sr-only">Roles can be reordered by dragging them in the menu, or with Alt and the arrow keys.</span>
           )}
-          {roles.map((r, i) => (
-            /* Drag to reorder. The wrapper carries the drag rather than the button, so
-               the button keeps its normal click-to-select behaviour. dragover must
-               preventDefault or the browser refuses the drop.
-               Example: drag the third chip onto the first -> [C, A, B], persisted. */
-            <div
-              key={r.id}
-              data-role-chip={r.title}
-              draggable
-              onDragStart={(e) => { dragFromRef.current = i; setDraggingRole(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move' }}
-              onDragOver={(e) => { e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move' }}
-              onDrop={(e) => { e.preventDefault(); reorderRoles(dragFromRef.current, i); dragFromRef.current = null; setDraggingRole(null) }}
-              onDragEnd={() => { dragFromRef.current = null; setDraggingRole(null) }}
-              className={`flex items-center transition-opacity ${draggingRole === i ? 'opacity-40' : ''}`}
-            >
-              {/* The grip sits OUTSIDE the button on purpose: inside, its glyph becomes
-                  part of the button's text, which changes the chip's accessible name
-                  and breaks anything matching a role by its label. */}
-              {roles.length > 1 && (
-                <span className="cursor-grab select-none text-gray-300 dark:text-gray-600 mr-1" aria-hidden="true" title="Drag to reorder, or Alt+Arrow to move">⠿</span>
-              )}
-              <motion.button
-                type="button"
-                onClick={() => { setActiveRoleId(r.id); setActiveSubTab('links') }}
-                onKeyDown={(e) => onRoleKeyDown(e, i)}
-                aria-pressed={r.id === activeRole?.id}
-                title={roles.length > 1 ? 'Drag to reorder, or Alt+Arrow to move' : undefined}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all magnetic-snap ${r.id === activeRole?.id ? 'bg-purple-500 text-white border-purple-500 shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+
+          <TextField
+            select
+            size="small"
+            value={activeRole?.id || ''}
+            onChange={(e) => { setActiveRoleId(e.target.value); setActiveSubTab('links') }}
+            onKeyDown={(e) => onRoleKeyDown(e, roles.findIndex((r) => r.id === activeRole?.id))}
+            aria-label="Role"
+            className="min-w-[260px]"
+            slotProps={{
+              select: {
+                renderValue: (val) => {
+                  const r = roles.find((x) => x.id === val)
+                  if (!r) return ''
+                  const status = r.customFields?.Status
+                  return (
+                    <span className="flex items-center gap-2">
+                      <Icon name="briefcase" size="14" />
+                      <span className="truncate">{r.title}</span>
+                      {status && <span className="text-gray-400 dark:text-gray-500">·</span>}
+                      {status && <span className="text-gray-500 dark:text-gray-400 truncate">{status}</span>}
+                    </span>
+                  )
+                },
+              },
+            }}
+          >
+            {roles.map((r, i) => (
+              <MenuItem
+                key={r.id}
+                value={r.id}
+                data-role-chip={r.title}
+                draggable
+                {...dragProps(i)}
+                className={draggingRole === i ? 'opacity-40' : ''}
               >
-                <Icon name="briefcase" size="14" /> {r.title}
-              </motion.button>
-              {roles.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeRole(r.id)}
-                  aria-label={`Remove role ${r.title}`}
-                  className="ml-1 text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors"
-                >
-                  <Icon name="x" size="14" />
-                </button>
-              )}
-            </div>
-          ))}
+                <span className="flex items-center gap-2 w-full">
+                  {roles.length > 1 && <span className="cursor-grab select-none text-gray-300 dark:text-gray-600" aria-hidden="true">⠿</span>}
+                  <span className="truncate flex-1">{r.title}</span>
+                  {r.customFields?.Status && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[r.customFields.Status] || NEUTRAL_CHIP}`}>
+                      {r.customFields.Status}
+                    </span>
+                  )}
+                </span>
+              </MenuItem>
+            ))}
+          </TextField>
+
           {!showRoleInput ? (
             <motion.button
               type="button"
               onClick={() => setShowRoleInput(true)}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
-              className="px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-purple-300 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex items-center gap-1.5"
+              aria-label="Add role"
+              className="px-3 py-2 rounded-lg text-sm font-medium border border-dashed border-purple-300 text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 transition-all flex items-center gap-1.5"
             >
-              <Icon name="plusCircle" size="14" /> Add role
+              <Icon name="plusCircle" size="16" /> Add role
             </motion.button>
           ) : (
             <div className="flex items-center gap-2">
@@ -1751,45 +2031,49 @@ function CompanyPage() {
               <motion.button type="button" onClick={() => { setShowRoleInput(false); setNewRoleTitle('') }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg text-sm transition-all" aria-label="Cancel role"><Icon name="x" size="16" /></motion.button>
             </div>
           )}
-        </div>
 
-        {/* Layout for the selected role, saved on that role -- switching roles also
-            switches to whichever layout that role was last read in. 'All roles' is a
-            page mode instead, comparing every role side by side.
-            Example: Product Engineer compact, Research Engineer table. */}
-        <div className="flex flex-wrap items-center gap-2 mt-3" data-testid="view-strip">
-          <Typography variant="caption" className="text-gray-500 dark:text-gray-400 mr-1">View</Typography>
-          {ROLE_VIEWS.map((v) => {
-            const on = !comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === v.id
-            return (
-              <motion.button
-                key={v.id}
-                type="button"
-                aria-pressed={on}
-                onClick={() => { setComparing(false); setRoleView(v.id) }}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${on ? 'bg-purple-500 text-white border-purple-500 shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
-              >
-                <Icon name={v.icon} size="14" /> {v.label}
-              </motion.button>
-            )
-          })}
-          {roles.length > 1 && (
+          {roles.length > 1 && activeRole && (
             <motion.button
               type="button"
-              aria-pressed={comparing}
-              onClick={() => setComparing((c) => !c)}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-all ${comparing ? 'bg-purple-500 text-white border-purple-500 shadow-md' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-purple-300'}`}
+              onClick={() => removeRole(activeRole.id)}
+              aria-label={`Remove role ${activeRole.title}`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-3 py-2 rounded-lg text-sm text-gray-400 dark:text-gray-500 hover:text-red-500 transition-colors flex items-center gap-1.5"
             >
-              <Icon name="columns" size="14" /> All roles
+              <Icon name="trash" size="16" />
             </motion.button>
           )}
+
+          <div className="ml-auto flex items-center gap-3">
+            <RolesLayoutToggle layout={rolesLayout} setLayout={setRolesLayout} />
+            <RoleViewSwitcher roles={roles} activeRole={activeRole} comparing={comparing} setComparing={setComparing} setRoleView={setRoleView} />
+          </div>
         </div>
       </motion.div>
+      )}
 
+      {/* The rail sits beside this body; in toolbar layout the body is full width.
+          Both branches render the same JSX, so a section cannot exist in one layout
+          and not the other. */}
+      <div className={rolesLayout === 'rail' ? 'flex flex-col sm:flex-row gap-6 items-start' : ''}>
+        {rolesLayout === 'rail' && (
+          <RoleRail
+            roles={roles} activeRole={activeRole}
+            setActiveRoleId={setActiveRoleId} setActiveSubTab={setActiveSubTab}
+            onRoleKeyDown={onRoleKeyDown} removeRole={removeRole}
+            dragProps={dragProps} draggingRole={draggingRole}
+            showRoleInput={showRoleInput} setShowRoleInput={setShowRoleInput}
+            newRoleTitle={newRoleTitle} setNewRoleTitle={setNewRoleTitle} addRole={addRole}
+          />
+        )}
+        <div className="flex-1 min-w-0 w-full">
+          {rolesLayout === 'rail' && (
+            <div className="flex flex-wrap items-center gap-3 justify-end mb-4">
+              <RolesLayoutToggle layout={rolesLayout} setLayout={setRolesLayout} />
+              <RoleViewSwitcher roles={roles} activeRole={activeRole} comparing={comparing} setComparing={setComparing} setRoleView={setRoleView} />
+            </div>
+          )}
       {/* The sub-tab strip belongs to the compact layout only; the other layouts show
           every section at once, so tabs would have nothing to switch. */}
       {!comparing && (activeRole?.view || DEFAULT_ROLE_VIEW) === 'compact' && (
@@ -1828,7 +2112,13 @@ function CompanyPage() {
             addCustomField={addCustomField} addCustomFieldNamed={addCustomFieldNamed}
           />
         ) : (activeRole?.view || DEFAULT_ROLE_VIEW) === 'table' ? (
-          <RoleTableView role={activeRole} customFields={customFields} customNames={customNames} updateCustomField={updateCustomField} />
+          <RoleTableView
+            role={activeRole}
+            customFields={customFields} customNames={customNames}
+            updateCustomField={updateCustomField} addCustomFieldNamed={addCustomFieldNamed}
+            addLink={addLink} removeLink={removeLink}
+            setResume={setResume} handleDownload={handleDownload} handleFileChange={handleFileChange} fileError={fileError}
+          />
         ) : (
           <>
             {activeSubTab === 'links' && (
@@ -1849,6 +2139,8 @@ function CompanyPage() {
           </>
         )}
       </motion.div>
+        </div>
+      </div>
 
     </div>
   )

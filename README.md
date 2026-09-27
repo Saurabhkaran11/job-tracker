@@ -69,13 +69,19 @@
 - `CompanyResume` — upload, download, and remove a resume file, with a 2 MB ceiling.
 - `CompanyCustom` — create named fields and edit their values, scoped to the selected role.
 - **Multiple roles per company** — one employer can hold several applications, each with its own recruiter, status, dates, salary, **job links and resume**.
-- A role strip on the company page switches between them, and roles can be added, removed and **reordered by dragging**.
+- The roles section has two layouts, switchable and remembered — **Toolbar** and **Rail**.
+- `Toolbar` — one row: a role picker carrying the current role's stage on the left, the layout and view controls on the right. Smallest footprint.
+- `Rail` — a vertical list beside the content, every role visible at once with its stage and link count.
+- Roles can be added, removed and **reordered by dragging** in either layout.
 - Alt+Left / Alt+Right moves the focused role, so reordering does not require a mouse.
 - The order is persisted and drives the role strip, the All-roles comparison columns and the dashboard chips alike.
 - **Each role remembers its own layout** — Compact, Detailed or Table — so switching roles also switches to the layout that role was last read in.
 - `Compact` — one section at a time behind the sub-tab strip.
 - `Detailed` — every section stacked on one page, no tabs.
-- `Table` — all toggles as a dense, still-editable two-column table with the role's links underneath.
+- `Table` — the whole role on one screen: a real two-column Field/Value table of its toggles, plus its links and resume, all editable in place.
+- Missing preset fields are addable from inside the table, so the view is never a dead end.
+- Links can be added and removed there, with the same URL validation and `https://` prefixing as elsewhere.
+- The resume can be uploaded, downloaded and removed from the table too.
 - **All roles** — a comparison view putting every role side by side, one column each, so two applications can be read against each other without switching.
 - Records saved before roles existed are migrated on read into a single role, so nothing is lost.
 - Fourteen one-click preset toggles covering what a job application actually needs — Status, Priority, Applied Date, Interview Date, Offer Deadline, Role, Location, Salary, Recruiter, Referral, Contact Email, Portal Login, Next Step, Notes.
@@ -192,6 +198,20 @@
 - **Then the fix for that created the opposite bug.** Merging by company *name* meant that once samples existed the loader refused with "already loaded", so anyone who had loaded them before the sample shape changed could never get the current version — their Anthropic stayed role-less with no recruiter. Reproduced directly against the built app.
 - Both are settled by matching on the stable `sample-` id: the sample companies are dropped and re-inserted with today's definitions, while anything the user created keeps its `crypto.randomUUID()` id and is never touched. The toast says **Added** on a first load and **Refreshed** afterwards.
 
+### Rebuilding the table view
+
+- It was a table in name only: full-height form controls stacked with no header, which made it the least dense of the three views despite the name.
+- Its links were read-only, it had no resume section at all, and its empty state told you to switch to another view — a dead end.
+- It is now a real `<table>` with a Field/Value header, an inline quick-add row for missing presets, a links section with add and remove, and the resume.
+- The link form validates with the same `linkSchema` used elsewhere, because `addLink()` only prefixes the scheme and does not reject a non-URL.
+- `TableCard` sits at module scope for the same reason as `RoleSection`: a component created during render remounts its subtree and drops focus out of any field inside it.
+
+### Roles section layouts
+
+- Both layouts drive the same state and handlers, and render the same page body, so behaviour cannot drift between them.
+- The layout is a workspace preference, saved under `job-tracker-roles-layout` like the theme, rather than data on a company.
+- Role-behaviour tests run in the rail, where every role is a visible row; the toolbar has its own block covering the picker and reordering from inside it.
+
 ### Reordering roles
 
 - The drag source is held in a **ref**, not state. `dragstart` and `drop` can land in the same tick, and a state update has not re-rendered by then, so a state-based handler read `null` and silently did nothing — it passed in jsdom, where each event is flushed, and failed in a real browser. State is kept only for the drag-in-flight styling.
@@ -271,7 +291,7 @@
 
 ## Testing
 
-- One consolidated suite in `src/App.test.jsx` — **133 tests, all passing**.
+- One consolidated suite in `src/App.test.jsx` — **157 tests, all passing**.
 - Runner is Vitest with jsdom and Testing Library; config lives in `vitest.config.js`, setup in `src/setupTests.js`.
 - Everything is driven through the rendered UI, so a passing test means a user could actually do that thing.
 - Assertions mostly read `localStorage` back, since that is the app's source of truth.
@@ -298,6 +318,8 @@
 - Resume upload: the file input being reachable rather than buried in a button, a real file being accepted and stored, the uploaded state with its download control, the 2 MB rejection, and the link count no longer hardcoded.
 - Roles: legacy migration with and without a `Role` field, adding a role, rejecting a duplicate title, removing one, refusing to remove the last, a separate recruiter surviving per role, a toggle landing only on the selected role, one dashboard chip per role, and the `N roles` card badge.
 - Sample data merging rather than replacing, not duplicating on a second load, refreshing stale samples saved in an older shape, never removing a company the user created, and shipping a two-role company with two different recruiters.
+- The table view: a real header, one row per toggle, editing in place, adding a missing field without leaving, an empty state that does not point elsewhere, the link count and list, adding a link, prefixing a bare domain, rejecting an invalid URL, requiring a URL, removing a link, the resume input being reachable, uploading from the table, and removing an attached resume.
+- Both roles layouts: the toolbar being the default, the picker showing the current role and stage, other roles staying out of the way until it is opened, switching role from it, the rail showing every role with its stage and link count, the choice persisting, the view control and page body being identical in both, and reordering working from the picker too.
 - Reordering roles: the chips being draggable, moving a role forward and backward, the strip repainting, a drop where it started writing nothing, each role's links/toggles/view staying attached through a move, Alt+Arrow moving a role, the first and last roles refusing to move out of bounds, the comparison columns following the new order, and the order surviving a reload.
 - Per-role views: the three layouts being offered, Compact being the start, the sub-tabs disappearing in Detailed, toggles listed as rows in Table, the layout saving onto the role, two roles holding different layouts at once, the layout surviving a reload, editing a toggle from the Table layout, All roles appearing only with more than one role, the comparison putting both roles' values side by side, and picking a layout leaving comparison mode.
 - Links and resume per role: legacy company-level links migrating onto the first role, only the selected role's links showing, a link landing on the selected role only, a resume attaching to one role and not the other, and the dashboard counting links across every role.
