@@ -1000,16 +1000,14 @@ export function HomePage() {
     withResume: companies.filter(hasAnyResume).length,
   }), [companies])
   const [collapsed, setCollapsed] = useState(false)
-  // Separate from `collapsed`, which hides the company cards. The tracker table and
-  // the card list are independent views of the same data, so each gets its own
-  // toggle rather than one control hiding both.
-  // Example: showTracker false -> the table is hidden, the cards below stay visible.
-  const [showTracker, setShowTracker] = useState(true)
+  // The tracker table and the card list are two presentations of the same companies,
+  // so this switches between them rather than stacking one above the other. Off by
+  // default: the cards are the dashboard's resting state and the table is the focused
+  // view you opt into.
+  // Example: showTracker true -> the table, and no card list underneath it.
+  const [showTracker, setShowTracker] = useState(false)
   const [showSamples, setShowSamples] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
-  // Focus mode: the tracker table and nothing else. Off on arrival -- it is a way to
-  // concentrate on the table, not the shape the dashboard should open in.
-  const [trackerOnly, setTrackerOnly] = useState(false)
   const { mode, toggleMode } = useThemeMode()
 
   return (
@@ -1081,7 +1079,7 @@ export function HomePage() {
       {/* Rendered even with no companies, so the sample-data and dark-mode controls
           are reachable on a first visit; only the list-specific toggles are gated. */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-2 mb-5 flex-wrap">
-        {stats.total > 0 && (
+        {stats.total > 0 && !showTracker && (
           <Btn icon="chevronDown" onClick={() => setCollapsed(!collapsed)}>
             {collapsed ? 'Show all' : 'Collapse list'}
           </Btn>
@@ -1132,22 +1130,10 @@ export function HomePage() {
             {showTracker ? 'Hide tracker' : 'Show tracker'}
           </Btn>
         )}
-        {/* Turning it on also turns the table on, so the mode can never leave an
-            empty screen. */}
-        {stats.total > 0 && (
-          <Btn
-            variant={trackerOnly ? 'selected' : 'secondary'}
-            icon="columns"
-            aria-pressed={trackerOnly}
-            aria-label="Show only the Job Links Tracker"
-            onClick={() => { const next = !trackerOnly; setTrackerOnly(next); if (next) setShowTracker(true) }}
-          >
-            Tracker only
-          </Btn>
-        )}
+
       </motion.div>
 
-      {!trackerOnly && !collapsed && stats.total > 0 && (
+      {!collapsed && stats.total > 0 && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="flex gap-4 mb-5 flex-wrap items-baseline">
           {[
             { label: 'Companies', value: stats.total },
@@ -1162,11 +1148,11 @@ export function HomePage() {
         </motion.div>
       )}
 
-      {!trackerOnly && showBulk && (
+      {showBulk && (
         <BulkAddPanel companies={companies} onSubmit={bulkAdd} onClose={() => setShowBulk(false)} />
       )}
 
-      {!trackerOnly && showSamples && (
+      {showSamples && (
         <SampleDataPanel
           onLoad={() => { loadSampleData(); setShowSamples(false) }}
           onClose={() => setShowSamples(false)}
@@ -1220,7 +1206,7 @@ export function HomePage() {
         </motion.div>
       )}
 
-      {!trackerOnly && !collapsed && (
+      {!showTracker && !collapsed && (
       <AnimatePresence mode="popLayout">
         {filtered.length === 0 ? (
           <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16">
@@ -1248,7 +1234,7 @@ export function HomePage() {
       </AnimatePresence>
       )}
 
-      {!trackerOnly && companies.length > 0 && (
+      {!showTracker && companies.length > 0 && (
           <motion.footer initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-8">
             <Divider />
             <div className="text-center py-4">
@@ -1257,7 +1243,7 @@ export function HomePage() {
           </motion.footer>
         )}
 
-        {!trackerOnly && companies.length > 0 && (
+        {!showTracker && companies.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="bg-[var(--surface-1)] rounded-xl border border-[var(--border)] p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-8 h-8 bg-[var(--accent-soft)] rounded-lg flex items-center justify-center"><Icon name="fileText" size="18" /></div>

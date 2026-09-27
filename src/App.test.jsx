@@ -257,6 +257,12 @@ describe('dashboard — deleting companies', () => {
 
 // ---------------------------------------------------------------------------
 describe('dashboard — sample data and the Status / Priority columns', () => {
+  /** The tracker is the opt-in view now, so column tests open it first. */
+  const openTracker = async (user) => {
+    await user.click(screen.getByRole('button', { name: /^show tracker$/i }))
+    await screen.findByText('Job Links Tracker')
+  }
+
   it('offers sample data only on an empty tracker', async () => {
     await mount('/')
     expect(screen.getByRole('button', { name: /load sample data/i })).toBeInTheDocument()
@@ -297,125 +303,101 @@ describe('dashboard — sample data and the Status / Priority columns', () => {
   })
 
   it('shows Status and Priority column headers', async () => {
+    const user = userEvent.setup()
     seed([company({ name: 'Anthropic' })])
     await mount('/')
-    const header = await waitFor(() => {
-      const el = document.querySelector('.grid.grid-cols-12')
-      expect(el).toBeTruthy()
-      return el
-    })
+    await screen.findAllByText('Anthropic')
+    await openTracker(user)
+    const header = document.querySelector('.grid.grid-cols-12')
     expect(header.textContent).toMatch(/Status/)
     expect(header.textContent).toMatch(/Priority/)
   })
 
   it('renders the Status and Priority values in the table', async () => {
+    const user = userEvent.setup()
     seed([company({ name: 'Anthropic', customFields: { Status: 'Offer', Priority: 'High' } })])
     await mount('/')
-    expect((await screen.findAllByText('Offer')).length).toBeGreaterThan(0)
+    await screen.findAllByText('Anthropic')
+    await openTracker(user)
+    expect(screen.getAllByText('Offer').length).toBeGreaterThan(0)
     expect(screen.getAllByText('High').length).toBeGreaterThan(0)
   })
 
   it('shows a dash when Status and Priority are unset', async () => {
+    const user = userEvent.setup()
     seed([company({ name: 'Anthropic', customFields: {} })])
     await mount('/')
     await screen.findAllByText('Anthropic')
+    await openTracker(user)
     const dashes = [...document.querySelectorAll('span')].filter((el) => el.textContent === '\u2014')
     expect(dashes.length).toBeGreaterThanOrEqual(2)
   })
 })
 
 // ---------------------------------------------------------------------------
-describe('dashboard — Job Links Tracker toggle and card styles', () => {
+describe('dashboard — tracker view and card styles', () => {
   const twoRoles = () => ([company({ id: 'c1', name: 'Anthropic' })])
-  const trackerToggle = () =>
-    screen.getByRole('button', { name: /^(hide|show) tracker$/i })
-  const trackerTable = () =>
-    [...document.querySelectorAll('div')].find((d) => d.textContent.trim().startsWith('Job Links Tracker'))
+  const trackerToggle = () => screen.getByRole('button', { name: /^(hide|show) tracker$/i })
 
-  it('shows the tracker table by default', async () => {
-    seed([company({ name: 'Anthropic' })])
-    await mount('/')
-    expect(await screen.findByText('Job Links Tracker')).toBeInTheDocument()
-  })
-
-  it('hides the tracker table when toggled off', async () => {
-    const user = userEvent.setup()
-    seed([company({ name: 'Anthropic' })])
-    await mount('/')
-    await user.click(trackerToggle())
-    await waitFor(() => expect(screen.queryByText('Job Links Tracker')).toBeNull())
-  })
-
-  it('brings the tracker table back when toggled on again', async () => {
-    const user = userEvent.setup()
-    seed([company({ name: 'Anthropic' })])
-    await mount('/')
-    await user.click(trackerToggle())
-    await waitFor(() => expect(screen.queryByText('Job Links Tracker')).toBeNull())
-    await user.click(trackerToggle())
-    expect(await screen.findByText('Job Links Tracker')).toBeInTheDocument()
-  })
-
-  it('leaves the company cards visible while the tracker is hidden', async () => {
-    const user = userEvent.setup()
-    seed([company({ name: 'Anthropic' })])
-    await mount('/')
-    await user.click(trackerToggle())
-    await waitFor(() => expect(screen.queryByText('Job Links Tracker')).toBeNull())
-    expect(screen.getByTestId('company-grid').textContent).toContain('Anthropic')
-    expect(trackerTable()).toBeFalsy()
-  })
-
-  it('does not start in tracker-only mode', async () => {
+  it('starts on the card list, not the tracker', async () => {
     seed(twoRoles())
     await mount('/')
     await screen.findAllByText('Anthropic')
-    expect(screen.getByRole('button', { name: /show only the job links tracker/i })).toHaveAttribute('aria-pressed', 'false')
     expect(screen.getByTestId('company-grid')).toBeTruthy()
+    expect(screen.queryByText('Job Links Tracker')).toBeNull()
+    expect(trackerToggle()).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('shows only the tracker when switched on', async () => {
+  it('swaps the card list for the tracker', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
     await mount('/')
     await screen.findAllByText('Anthropic')
-    await user.click(screen.getByRole('button', { name: /show only the job links tracker/i }))
-    await waitFor(() => expect(screen.queryByTestId('company-grid')).toBeNull())
-    expect(screen.getByText('Job Links Tracker')).toBeInTheDocument()
+    await user.click(trackerToggle())
+    expect(await screen.findByText('Job Links Tracker')).toBeInTheDocument()
+    // the point of the change: the cards do not stay underneath the table
+    expect(screen.queryByTestId('company-grid')).toBeNull()
   })
 
-  it('leaves the controls reachable in tracker-only mode', async () => {
+  it('swaps back to the card list', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
     await mount('/')
     await screen.findAllByText('Anthropic')
-    await user.click(screen.getByRole('button', { name: /show only the job links tracker/i }))
-    await waitFor(() => expect(screen.queryByTestId('company-grid')).toBeNull())
-    expect(screen.getByRole('button', { name: /show only the job links tracker/i })).toBeInTheDocument()
+    await user.click(trackerToggle())
+    await screen.findByText('Job Links Tracker')
+    await user.click(trackerToggle())
+    await waitFor(() => expect(screen.getByTestId('company-grid')).toBeTruthy())
+    expect(screen.queryByText('Job Links Tracker')).toBeNull()
+  })
+
+  it('has no separate tracker-only toggle any more', async () => {
+    seed(twoRoles())
+    await mount('/')
+    await screen.findAllByText('Anthropic')
+    expect(screen.queryByRole('button', { name: /tracker only/i })).toBeNull()
+  })
+
+  it('keeps the controls reachable in the tracker view', async () => {
+    const user = userEvent.setup()
+    seed(twoRoles())
+    await mount('/')
+    await screen.findAllByText('Anthropic')
+    await user.click(trackerToggle())
+    await screen.findByText('Job Links Tracker')
+    expect(trackerToggle()).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /switch to dark mode/i })).toBeInTheDocument()
   })
 
-  it('brings the rest of the dashboard back when switched off', async () => {
+  it('hides Collapse list in the tracker view, where it means nothing', async () => {
     const user = userEvent.setup()
     seed(twoRoles())
     await mount('/')
     await screen.findAllByText('Anthropic')
-    const btn = () => screen.getByRole('button', { name: /show only the job links tracker/i })
-    await user.click(btn())
-    await waitFor(() => expect(screen.queryByTestId('company-grid')).toBeNull())
-    await user.click(btn())
-    await waitFor(() => expect(screen.getByTestId('company-grid')).toBeTruthy())
-  })
-
-  it('turns the table on if it was hidden', async () => {
-    const user = userEvent.setup()
-    seed(twoRoles())
-    await mount('/')
-    await screen.findAllByText('Anthropic')
+    expect(screen.getByRole('button', { name: /collapse list/i })).toBeInTheDocument()
     await user.click(trackerToggle())
-    await waitFor(() => expect(screen.queryByText('Job Links Tracker')).toBeNull())
-    await user.click(screen.getByRole('button', { name: /show only the job links tracker/i }))
-    expect(await screen.findByText('Job Links Tracker')).toBeInTheDocument()
+    await screen.findByText('Job Links Tracker')
+    expect(screen.queryByRole('button', { name: /collapse list/i })).toBeNull()
   })
 
   it('offers exactly two card styles', async () => {
@@ -434,7 +416,7 @@ describe('dashboard — Job Links Tracker toggle and card styles', () => {
     await waitFor(() => expect(document.querySelector('.card-compact')).toBeTruthy())
   })
 
-  it('switches to the detailed style, which keeps the old featured look', async () => {
+  it('switches to the detailed style', async () => {
     const user = userEvent.setup()
     seed([company({
       name: 'Anthropic',
@@ -445,8 +427,6 @@ describe('dashboard — Job Links Tracker toggle and card styles', () => {
     await screen.findAllByText('Anthropic')
     await user.click(screen.getByRole('button', { name: /detailed/i }))
     await waitFor(() => expect(document.querySelector('.card-featured')).toBeTruthy())
-    // the detailed style keeps the link preview chips and the resume block; the
-    // corner dots went with the rest of the decorative motion
     expect(document.body.textContent).toContain('Careers')
     expect(document.body.textContent).toContain('cv.pdf')
   })

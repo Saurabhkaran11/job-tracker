@@ -47,8 +47,9 @@
 - Card-style switcher offering two looks — **Compact** and **Detailed**.
 - `Compact` — dense list row, numbered badge, link count and a resume chip.
 - `Detailed` — roomy card with accent border, link preview chips, corner accent dots and a resume block.
-- A **Hide / Show tracker** toggle for the dashboard table, independent of Collapse list.
-- A **Tracker only** toggle that puts the table on its own — off by default, and it switches the table on so the mode can never leave an empty screen.
+- A **Show / Hide tracker** toggle that swaps between the two views of the same companies — the card list and the tracker table — rather than stacking one above the other.
+- Off by default: the cards are the resting state, the table is the focused view you opt into.
+- Collapse list is hidden in the tracker view, where it has nothing to collapse.
 - A **Dark mode** toggle (sun/moon) switching the whole app between light and dark.
 - A **Sample data** icon opening a panel that lists every feature with the sample value demonstrating it, and loads that data in one click.
 - A **Bulk add** toggle opening one form that creates a whole application in a single submit — company, role title, several job links and any of the preset toggles.
@@ -365,7 +366,7 @@ Three problems, fixed together.
 
 ## Testing
 
-- One consolidated suite in `src/App.test.jsx` — **162 tests, all passing**.
+- One consolidated suite in `src/App.test.jsx` — **159 tests, all passing**.
 - Runner is Vitest with jsdom and Testing Library; config lives in `vitest.config.js`, setup in `src/setupTests.js`.
 - Everything is driven through the rendered UI, so a passing test means a user could actually do that thing.
 - Assertions mostly read `localStorage` back, since that is the app's source of truth.
@@ -379,7 +380,7 @@ Three problems, fixed together.
 - Deleting with the confirm accepted, with it cancelled, and that the bin never navigates into the card.
 - The sample-data button appearing only on an empty tracker, and the data it loads.
 - Status and Priority column headers, their values, and the dash shown when unset.
-- The Job Links Tracker toggle hiding the table, bringing it back, and leaving the company cards visible while hidden.
+- The tracker view: starting on the cards, swapping the cards for the table, swapping back, the separate tracker-only toggle being gone, the controls staying reachable, and Collapse list disappearing in the tracker view.
 - Dark mode starting light, switching both ways, persisting the choice, restoring a saved preference on load, and being reachable on an empty tracker.
 - The sample-data panel staying closed until clicked, listing every feature, showing real sample values rather than placeholders, loading the data, closing after a load, and closing without loading from the close button.
 - A sample row existing for all fourteen preset toggles.
