@@ -6,6 +6,39 @@
 
 ---
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FSaurabhkaran11%2Fjob-tracker)
+
+## Deploy
+
+The app is a standard Next.js App Router project, so Vercel needs no configuration — no `vercel.json`, no environment variables, no build overrides. It detects Next.js, runs `next build`, and serves it.
+
+### One click
+
+- Use the **Deploy with Vercel** button above.
+- It clones this repository into your account and wires the deployment to it.
+
+### From an existing repository
+
+- Go to `vercel.com/new`.
+- Import `Saurabhkaran11/job-tracker`.
+- Accept the detected settings and deploy.
+- Every push to `main` then redeploys automatically.
+
+### From the command line
+
+- `npm i -g vercel`
+- `vercel login` — an interactive browser sign-in.
+- `vercel` from the project root for a preview deployment.
+- `vercel --prod` to promote it to production.
+
+### What gets deployed
+
+- `/` is prerendered as static content.
+- `/company/[id]` is server-rendered on demand, because company ids are created at runtime and live only in the visitor's `localStorage` — there is no set of paths to pre-render.
+- That dynamic route is why `output: 'export'` is not set, and why the app needs a Node runtime rather than a purely static host.
+- There is no backend and no database, so nothing needs provisioning alongside it.
+- Each visitor's data lives in their own browser; deploying does not share or migrate anything.
+
 ## Quick start
 
 - `npm install` — install dependencies.
