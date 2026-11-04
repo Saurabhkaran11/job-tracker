@@ -34,7 +34,7 @@ This is worth being precise about, because the name suggests more protection tha
 
 ## Deploy
 
-The app is a standard Next.js App Router project, so Vercel needs no configuration — no `vercel.json`, no environment variables, no build overrides. It detects Next.js, runs `next build`, and serves it.
+The app is a standard Next.js App Router project, so Vercel needs no `vercel.json` and no build overrides. The only setting is the optional `NEXT_PUBLIC_APP_PIN`, and without it the PIN is `1234`. It detects Next.js, runs `next build`, and serves it.
 
 ### One click
 
